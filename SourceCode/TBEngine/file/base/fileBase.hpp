@@ -8,6 +8,7 @@ namespace TBE::File {
 class FileBase {
 public:
     FileBase(const std::string& filePath_) : filePath(filePath_), valid(pathValid()) {}
+    FileBase(const std::filesystem::path& filePath_) : filePath(filePath_), valid(pathValid()) {}
 
 protected:
     const std::filesystem::path filePath{};

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TBEngine/utils/macros/includeVulkan.hpp"
-#include "TBEngine/graphics/vulkanAbstract/base/base.hpp"
+#include "TBEngine/graphics/vulkanAbstract/base/vulkanAbstractBase.hpp"
 
 #include <vector>
 #include <utility>
@@ -10,22 +10,19 @@ namespace TBE::Graphics {
 using Utils::Log::logErrorMsg;
 
 class SwapchainResource : public VulkanAbstractBase {
-    // 1452
 public:
-    SwapchainResource() = default;
+    SwapchainResource() = delete;
+    SwapchainResource(const vk::Device&         device_,
+                      const vk::PhysicalDevice& phyDevice_,
+                      const vk::SurfaceKHR&     surface_)
+        : VulkanAbstractBase(device_, phyDevice_), surface(surface_) {}
     ~SwapchainResource();
 
 public:
-    void initAll(const vk::Device*                    pDevice_,
-                 vk::SurfaceKHR*                      pSurface_,
-                 const vk::PhysicalDevice&            phyDevice,
-                 const std::pair<uint32_t, uint32_t>& bufferSize);
+    void init(const vk::PhysicalDevice& phyDevice, const std::pair<uint32_t, uint32_t>& bufferSize);
     void destroy() override;
 
-    void setPSurface(const vk::SurfaceKHR* pSurface_) { pSurface = pSurface_; };
-
-    void createSwapChain(const vk::PhysicalDevice&            phyDevice,
-                         const std::pair<uint32_t, uint32_t>& bufferSize);
+    void createSwapChain(const std::pair<uint32_t, uint32_t>& bufferSize);
     void createImages();
     void createViews();
 
@@ -37,7 +34,12 @@ public:
     vk::Format format{};
 
 private:
-    const vk::SurfaceKHR* pSurface;
+    const vk::SurfaceKHR& surface;
+
+private:
+    bool swapchainInited = false;
+    bool imageInited     = false;
+    bool viewInited      = false;
 };
 
 } // namespace TBE::Graphics

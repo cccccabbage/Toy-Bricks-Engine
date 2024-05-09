@@ -4,10 +4,7 @@
 #include "TBEngine/utils/log/log.hpp"
 #include "TBEngine/window/window.hpp"
 #include "TBEngine/math/dataFormat.hpp"
-#include "TBEngine/file/shader/shader.hpp"
-#include "TBEngine/file/texture/texture.hpp"
 #include "TBEngine/file/model/model.hpp"
-#include "TBEngine/graphics/vulkanAbstract/bufferResource/stagingBuffer.hpp"
 
 #include <utility>
 
@@ -45,7 +42,6 @@ void VulkanGraphics::initVulkan() {
     createSwapChain();
 
     createRenderPass();
-    createDescriptorSetLayout();
     createGraphicsPipeline();
 
     createColorResources();
@@ -53,13 +49,11 @@ void VulkanGraphics::initVulkan() {
     createFramebuffers();
     createCommandPool();
 
-    createTextureImage();
-    createTextureSampler();
+    createTexture();
 
     loadModel();
     createUniformBuffers();
-    createDescriptorPool();
-    createDescriptorSets();
+    createDescriptor();
 
     createCommandBuffers();
     createSyncObjects();
@@ -144,14 +138,13 @@ void VulkanGraphics::cleanup() {
 
     cleanupSwapChain();
 
-    device.destroy(textureSampler);
-    textureImageR.destroy();
+    texture.destroy();
 
     std::for_each(uniformBufferRs.begin(),
                   uniformBufferRs.end(),
                   [](BufferResourceUniform& uniBuf) { uniBuf.destroy(); });
 
-    descriptor.destroy();
+    shader.destroy();
 
     indexBufferRC.destroy();
     vertexBufferRC.destroy();
@@ -235,29 +228,28 @@ void VulkanGraphics::pickPhysicalDevice() {
     depackReturnValue(devices, instance.enumeratePhysicalDevices());
     if (devices.size() == 0) { logErrorMsg("Failed to find GPUs with Vulkan support."); }
 
-    for (const auto& device : devices) {
-        if (isDeviceSuitable(device)) {
-            physicalDevice = device;
-            msaaSamples    = getMaxUsableSampleCount();
+    for (const auto& phyDeivce_ : devices) {
+        if (isDeviceSuitable(phyDeivce_)) {
+            phyDevice   = phyDeivce_;
+            msaaSamples = getMaxUsableSampleCount(phyDevice);
             break;
         }
     }
 
-    if (!physicalDevice) { logErrorMsg("Failed to find suitable GPU."); }
-    phyMemPro = physicalDevice.getMemoryProperties();
+    if (!phyDevice) { logErrorMsg("Failed to find suitable GPU."); }
 }
 
 void VulkanGraphics::createExtent() {
     vk::SurfaceCapabilitiesKHR capabilities{};
-    depackReturnValue(capabilities, physicalDevice.getSurfaceCapabilitiesKHR(surface));
-    extent = chooseSwapExtent(capabilities, window->getFramebufferSize().toPair());
+    depackReturnValue(capabilities, phyDevice.getSurfaceCapabilitiesKHR(surface));
+    extent = chooseSwapExtent(capabilities, window->getFramebufferSize());
 }
 
 void VulkanGraphics::createLogicalDevice() {
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos{};
 
-    QueueFamilyIndices indices             = QueueFamilyIndices(physicalDevice, &surface);
-    std::set<uint32_t> uniqueQueueFamilies = indices.toSet();
+    QueueFamilyIndices indices             = QueueFamilyIndices(phyDevice, &surface);
+    std::set<uint32_t> uniqueQueueFamilies = indices;
 
     float queuePriority = 1.0f;
     for (auto queueFamily : uniqueQueueFamilies) {
@@ -278,61 +270,22 @@ void VulkanGraphics::createLogicalDevice() {
         .setPpEnabledExtensionNames(deviceExtensions.data())
         .setPEnabledFeatures(&deviceFeatures);
 
-    depackReturnValue(device, physicalDevice.createDevice(createInfo));
+    depackReturnValue(device, phyDevice.createDevice(createInfo));
 
     graphicsQueue = device.getQueue(indices.graphicsFamily.value(), 0);
     presentQueue  = device.getQueue(indices.presentFamily.value(), 0);
 }
 
-void VulkanGraphics::createSwapChain() {
-    swapchainR.initAll(&device, &surface, physicalDevice, window->getFramebufferSize().toPair());
-}
+void VulkanGraphics::createSwapChain() { swapchainR.init(phyDevice, window->getFramebufferSize()); }
 
 void VulkanGraphics::createRenderPass() {
-    renderPass.initAll(&device, swapchainR.format, findDepthFormat(), msaaSamples);
-}
-
-void VulkanGraphics::createDescriptorSetLayout() {
-    // data that would be passed to shader during render pass is defined here
-    // only the data specifies as "uniform" in shader
-
-    vk::DescriptorSetLayoutBinding uboLayoutBinding{};
-    uboLayoutBinding.setBinding(0)
-        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-        .setDescriptorCount(1)
-        .setStageFlags(vk::ShaderStageFlagBits::eVertex);
-
-    vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
-    samplerLayoutBinding.setBinding(1)
-        .setDescriptorCount(1)
-        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-        .setPImmutableSamplers(nullptr)
-        .setStageFlags(vk::ShaderStageFlagBits::eFragment);
-
-    std::array bindings = {uboLayoutBinding, samplerLayoutBinding};
-    descriptor.setPDevice(&device);
-    descriptor.initLayout(bindings);
+    renderPass.init(swapchainR.format, findDepthFormat(), msaaSamples);
 }
 
 void VulkanGraphics::createGraphicsPipeline() {
-    File::ShaderFile vertShader{"Shaders/vert.spv"};
-    File::ShaderFile fragShader{"Shaders/frag.spv"};
-    auto             vertShaderCode = vertShader.read();
-    auto             fragShaderCode = fragShader.read();
-
-    auto vertShaderModule = createShaderModule(vertShaderCode);
-    auto fragShaderModule = createShaderModule(fragShaderCode);
-
-    vk::PipelineShaderStageCreateInfo vertShaderStageInfo{};
-    vertShaderStageInfo.setStage(vk::ShaderStageFlagBits::eVertex)
-        .setModule(vertShaderModule)
-        .setPName("main");
-    vk::PipelineShaderStageCreateInfo fragShaderStageInfo{};
-    fragShaderStageInfo.setStage(vk::ShaderStageFlagBits::eFragment)
-        .setModule(fragShaderModule)
-        .setPName("main");
-
-    vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+    shader.addShader("Shaders/vert.spv", ShaderType::eVertex);
+    shader.addShader("Shaders/frag.spv", ShaderType::eFrag);
+    auto shaderStages = shader.doneShaderAdding(); // descriptor set layout inited here
 
     std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport,
                                                    vk::DynamicState::eScissor};
@@ -412,13 +365,13 @@ void VulkanGraphics::createGraphicsPipeline() {
 
     // define the uniform data that would be passed to shader
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.setSetLayoutCount(1).setPSetLayouts(&descriptor.layout);
+    pipelineLayoutInfo.setSetLayoutCount(1).setPSetLayouts(&shader.descriptors.layout);
 
     depackReturnValue(pipelineLayout, device.createPipelineLayout(pipelineLayoutInfo));
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
-    pipelineInfo.setStageCount(2)
-        .setPStages(shaderStages)
+    pipelineInfo.setStageCount(static_cast<uint32_t>(shaderStages.size()))
+        .setPStages(shaderStages.data())
         .setPVertexInputState(&vertexInputInfo)
         .setPInputAssemblyState(&inputAssembly)
         .setPViewportState(&viewportState)
@@ -435,8 +388,7 @@ void VulkanGraphics::createGraphicsPipeline() {
     depackReturnValue(grapPipes, device.createGraphicsPipelines(nullptr, pipelineInfo));
     graphicsPipeline = std::move(grapPipes[0]);
 
-    device.destroy(fragShaderModule);
-    device.destroy(vertShaderModule);
+    shader.destroyCache(); // shaderModules, createInfos and descriptor set layout bindings
 }
 
 void VulkanGraphics::createFramebuffers() {
@@ -458,7 +410,7 @@ void VulkanGraphics::createFramebuffers() {
 }
 
 void VulkanGraphics::createCommandPool() {
-    auto indices = QueueFamilyIndices(physicalDevice, &surface);
+    auto indices = QueueFamilyIndices(phyDevice, &surface);
 
     vk::CommandPoolCreateInfo poolInfo{};
     poolInfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
@@ -468,93 +420,21 @@ void VulkanGraphics::createCommandPool() {
 }
 
 void VulkanGraphics::createColorResources() {
-    auto colorFormat = swapchainR.format;
-
-    auto [imageInfo, viewInfo, memPro, reqPro] = createImageInfos(
-        extent.width,
-        extent.height,
-        1,
-        msaaSamples,
-        colorFormat,
-        vk::ImageTiling::eOptimal,
-        vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
-        vk::ImageAspectFlagBits::eColor);
-
-    colorImageR.initAll(&device, imageInfo, viewInfo, memPro, reqPro);
+    colorImageR.setFormat(swapchainR.format);
+    colorImageR.setWH(extent.width, extent.height);
+    colorImageR.init(ImageResourceType::eColor);
 }
 
 void VulkanGraphics::createDepthResources() {
-    auto depthFormat = findDepthFormat();
-    auto [imageInfo, viewInfo, memPro, reqPro] =
-        createImageInfos(extent.width,
-                         extent.height,
-                         1,
-                         msaaSamples,
-                         depthFormat,
-                         vk::ImageTiling::eOptimal,
-                         vk::ImageUsageFlagBits::eDepthStencilAttachment,
-                         vk::MemoryPropertyFlagBits::eDeviceLocal,
-                         vk::ImageAspectFlagBits::eDepth);
-
-    depthImageR.initAll(&device, imageInfo, viewInfo, memPro, reqPro);
+    depthImageR.setFormat(findDepthFormat());
+    depthImageR.setWH(extent.width, extent.height);
+    depthImageR.init(ImageResourceType::eDepth);
 }
 
-void VulkanGraphics::createTextureImage() {
-    File::TextureFile tex{"Resources/Textures/viking_room.png"};
-    auto              texContent = tex.read();
-    auto              pixels     = texContent->pixels;
-    int               texHeight = texContent->texHeight, texWidth = texContent->texWidth;
-    vk::DeviceSize    imageSize = texHeight * texWidth * 4;
-    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-
-    std::span<std::byte> data(reinterpret_cast<std::byte*>(pixels), imageSize);
-    StagingBuffer        stagingBuffer{&device, data, phyMemPro};
-    tex.free();
-
-    auto [imageInfo, viewInfo, memPro, reqPro] =
-        createImageInfos(texWidth,
-                         texHeight,
-                         mipLevels,
-                         vk::SampleCountFlagBits::e1,
-                         vk::Format::eR8G8B8A8Srgb,
-                         vk::ImageTiling::eOptimal,
-                         vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-                         vk::MemoryPropertyFlagBits::eDeviceLocal,
-                         vk::ImageAspectFlagBits::eColor);
-    textureImageR.initAll(&device, imageInfo, viewInfo, memPro, reqPro);
-
-    transitionImageLayout(textureImageR.image,
-                          vk::Format::eR8G8B8A8Srgb,
-                          vk::ImageLayout::eUndefined,
-                          vk::ImageLayout::eTransferDstOptimal,
-                          mipLevels);
-    stagingBuffer.copyTo(
-        &textureImageR,
-        static_cast<uint32_t>(texWidth),
-        static_cast<uint32_t>(texHeight),
-        [this](std::function<void(vk::CommandBuffer&)> func) { this->disposableCommands(func); });
-
-    generateMipmaps(textureImageR.image, vk::Format::eR8G8B8A8Srgb, texWidth, texHeight, mipLevels);
-}
-
-void VulkanGraphics::createTextureSampler() {
-    vk::SamplerCreateInfo samplerInfo{};
-    samplerInfo.setMagFilter(vk::Filter::eLinear)
-        .setMinFilter(vk::Filter::eLinear)
-        .setAddressModeU(vk::SamplerAddressMode::eRepeat)
-        .setAddressModeV(vk::SamplerAddressMode::eRepeat)
-        .setAddressModeW(vk::SamplerAddressMode::eRepeat)
-        .setAnisotropyEnable(vk::True)
-        .setMaxAnisotropy(physicalDevice.getProperties().limits.maxSamplerAnisotropy)
-        .setBorderColor(vk::BorderColor::eIntOpaqueBlack)
-        .setUnnormalizedCoordinates(vk::False)
-        .setCompareEnable(vk::False)
-        .setCompareOp(vk::CompareOp::eAlways)
-        .setMipmapMode(vk::SamplerMipmapMode::eLinear)
-        .setMaxLod(static_cast<float>(mipLevels));
-
-    depackReturnValue(textureSampler, device.createSampler(samplerInfo));
+void VulkanGraphics::createTexture() {
+    texture.init(
+        "Resources/Textures/viking_room.png",
+        [this](std::function<void(vk::CommandBuffer&)> func) { disposableCommands(func); });
 }
 
 void VulkanGraphics::loadModel() {
@@ -564,40 +444,36 @@ void VulkanGraphics::loadModel() {
 
     std::span<std::byte> verData(reinterpret_cast<std::byte*>(vertices.data()), bufferSize);
     vertexBufferRC.init(
-        &device,
         verData,
         vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
         vk::MemoryPropertyFlagBits::eDeviceLocal,
-        phyMemPro,
-        [this](std::function<void(vk::CommandBuffer&)> func) { this->disposableCommands(func); });
+        [this](std::function<void(vk::CommandBuffer&)> func) { disposableCommands(func); });
 
     auto indices = model.getIndices();
     bufferSize   = sizeof(indices[0]) * indices.size();
 
     std::span<std::byte> idxData(reinterpret_cast<std::byte*>(indices.data()), bufferSize);
     indexBufferRC.init(
-        &device,
         idxData,
         vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
         vk::MemoryPropertyFlagBits::eDeviceLocal,
-        phyMemPro,
-        [this](std::function<void(vk::CommandBuffer&)> func) { this->disposableCommands(func); });
+        [this](std::function<void(vk::CommandBuffer&)> func) { disposableCommands(func); });
 
-    // cannot apply model.free() here.
+    // model.free() should not be called as long as there is a need to draw the model
 }
 
 void VulkanGraphics::createUniformBuffers() {
     vk::DeviceSize bufferSize = sizeof(Math::DataFormat::UniformBufferObject);
 
-    uniformBufferRs.resize(MAX_FRAMES_IN_FLIGHT);
+    uniformBufferRs.resize(MAX_FRAMES_IN_FLIGHT, {device, phyDevice});
     std::for_each(uniformBufferRs.begin(),
                   uniformBufferRs.end(),
                   [this, bufferSize](BufferResourceUniform& unibuf) {
-                      unibuf.init(&this->device, bufferSize, this->phyMemPro);
+                      unibuf.init(bufferSize, phyDevice.getMemoryProperties());
                   });
 }
 
-void VulkanGraphics::createDescriptorPool() {
+void VulkanGraphics::createDescriptor() {
     std::array<vk::DescriptorPoolSize, 2> poolSizes{};
     poolSizes[0]
         .setType(vk::DescriptorType::eUniformBuffer)
@@ -606,11 +482,9 @@ void VulkanGraphics::createDescriptorPool() {
         .setType(vk::DescriptorType::eCombinedImageSampler)
         .setDescriptorCount(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT));
 
-    descriptor.initPool(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT), poolSizes);
-}
+    shader.descriptors.initPool(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT), poolSizes);
 
-void VulkanGraphics::createDescriptorSets() {
-    descriptor.initSets(uniformBufferRs, textureSampler, textureImageR.imageView);
+    shader.descriptors.initSets(uniformBufferRs, texture.sampler, texture.imageR.imageView);
 }
 
 void VulkanGraphics::createCommandBuffers() {
@@ -701,19 +575,19 @@ vk::ShaderModule VulkanGraphics::createShaderModule(const std::vector<char>& cod
     return std::move(shaderModule);
 }
 
-bool VulkanGraphics::isDeviceSuitable(const vk::PhysicalDevice& device) {
-    QueueFamilyIndices indices = QueueFamilyIndices(device, &surface);
+bool VulkanGraphics::isDeviceSuitable(const vk::PhysicalDevice& phyDevice) {
+    QueueFamilyIndices indices = QueueFamilyIndices(phyDevice, &surface);
 
-    auto extensionsSupported = checkDeviceExtensionSupport(device, deviceExtensions);
+    auto extensionsSupported = checkDeviceExtensionSupport(phyDevice, deviceExtensions);
 
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport{device, surface};
+        SwapChainSupportDetails swapChainSupport{phyDevice, surface};
         swapChainAdequate =
             !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
-    auto supportedFeatures = device.getFeatures();
+    auto supportedFeatures = phyDevice.getFeatures();
 
     return indices.isComplete() && extensionsSupported && swapChainAdequate &&
            supportedFeatures.samplerAnisotropy;
@@ -760,7 +634,7 @@ void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                      pipelineLayout,
                                      0,
-                                     descriptor.sets[currentFrame],
+                                     shader.descriptors.sets[currentFrame],
                                      static_cast<uint32_t>(0));
 
     commandBuffer.drawIndexed(static_cast<uint32_t>(model.getIndices().size()), 1, 0, 0, 0);
@@ -769,95 +643,12 @@ void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32
     handleVkResult(commandBuffer.end());
 }
 
-vk::Format VulkanGraphics::findSupportedFormat(const std::vector<vk::Format>& candidates,
-                                               vk::ImageTiling                tiling,
-                                               vk::FormatFeatureFlags         features) {
-    for (vk::Format format : candidates) {
-        auto props = physicalDevice.getFormatProperties(format);
-        if (tiling == vk::ImageTiling::eLinear &&
-            (props.linearTilingFeatures & features) == features) {
-            return format;
-        } else if (tiling == vk::ImageTiling::eOptimal &&
-                   (props.optimalTilingFeatures & features) == features) {
-            return format;
-        }
-    }
-
-    logErrorMsg("failed to find supported format!");
-    return {};
-}
-
 vk::Format VulkanGraphics::findDepthFormat() {
     return findSupportedFormat(
+        phyDevice,
         {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
         vk::ImageTiling::eOptimal,
         vk::FormatFeatureFlagBits::eDepthStencilAttachment);
-}
-
-std::tuple<vk::Buffer, vk::DeviceMemory>
-VulkanGraphics::createBuffer(vk::DeviceSize          size,
-                             vk::BufferUsageFlags    usage,
-                             vk::MemoryPropertyFlags properties) {
-    vk::Buffer       buffer{};
-    vk::DeviceMemory bufferMemory{};
-
-    vk::BufferCreateInfo bufferInfo{};
-    bufferInfo.setSize(size).setUsage(usage).setSharingMode(vk::SharingMode::eExclusive);
-
-    depackReturnValue(buffer, device.createBuffer(bufferInfo));
-
-    auto memRequirements = device.getBufferMemoryRequirements(buffer);
-
-    vk::MemoryAllocateInfo allocInfo{};
-    allocInfo.setAllocationSize(memRequirements.size)
-        .setMemoryTypeIndex(findMemoryType(phyMemPro, memRequirements.memoryTypeBits, properties));
-
-    depackReturnValue(bufferMemory, device.allocateMemory(allocInfo));
-
-    handleVkResult(device.bindBufferMemory(buffer, bufferMemory, 0));
-
-    return std::make_tuple(std::move(buffer), std::move(bufferMemory));
-}
-
-std::tuple<vk::ImageCreateInfo,
-           vk::ImageViewCreateInfo,
-           vk::PhysicalDeviceMemoryProperties,
-           vk::MemoryPropertyFlags>
-VulkanGraphics::createImageInfos(uint32_t                width,
-                                 uint32_t                height,
-                                 uint32_t                mipLevels_,
-                                 vk::SampleCountFlagBits numSamples,
-                                 vk::Format              format,
-                                 vk::ImageTiling         tiling,
-                                 vk::ImageUsageFlags     usage,
-                                 vk::MemoryPropertyFlags properties,
-                                 vk::ImageAspectFlags    aspectFlags) {
-    vk::ImageCreateInfo imageInfo{};
-    imageInfo.setImageType(vk::ImageType::e2D)
-        .setExtent({static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1})
-        .setMipLevels(mipLevels_)
-        .setArrayLayers(1)
-        .setFormat(format)
-        .setTiling(tiling)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setUsage(usage)
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setSharingMode(vk::SharingMode::eExclusive)
-        .setSamples(numSamples);
-
-    vk::ImageSubresourceRange subresourceRange{};
-    subresourceRange.setAspectMask(aspectFlags)
-        .setBaseMipLevel(0)
-        .setLevelCount(mipLevels_)
-        .setBaseArrayLayer(0)
-        .setLayerCount(1);
-
-    vk::ImageViewCreateInfo viewInfo{};
-    viewInfo.setViewType(vk::ImageViewType::e2D)
-        .setFormat(format)
-        .setSubresourceRange(subresourceRange);
-
-    return std::make_tuple(imageInfo, viewInfo, phyMemPro, properties);
 }
 
 void VulkanGraphics::disposableCommands(std::function<void(vk::CommandBuffer&)> func) {
@@ -888,184 +679,6 @@ void VulkanGraphics::disposableCommands(std::function<void(vk::CommandBuffer&)> 
     }
 
     device.free(commandPool, 1, &cmdBuffer);
-}
-
-void VulkanGraphics::transitionImageLayout(vk::Image       image,
-                                           vk::Format      format,
-                                           vk::ImageLayout oldLayout,
-                                           vk::ImageLayout newLayout,
-                                           uint32_t        mipLevels_) {
-    vk::ImageSubresourceRange subresourceRange{};
-    subresourceRange.setBaseMipLevel(0)
-        .setLevelCount(mipLevels_)
-        .setBaseArrayLayer(0)
-        .setLayerCount(1);
-
-    vk::ImageMemoryBarrier barrier{};
-    barrier.setOldLayout(oldLayout)
-        .setNewLayout(newLayout)
-        .setSrcQueueFamilyIndex(vk::QueueFamilyIgnored)
-        .setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
-        .setImage(image)
-        .setSubresourceRange(subresourceRange);
-
-    vk::PipelineStageFlags sourceStage{};
-    vk::PipelineStageFlags destinationStage{};
-    if (oldLayout == vk::ImageLayout::eUndefined &&
-        newLayout == vk::ImageLayout::eTransferDstOptimal) {
-        barrier.setSrcAccessMask(vk::AccessFlagBits::eNone)
-            .setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
-
-        sourceStage      = vk::PipelineStageFlagBits::eTopOfPipe;
-        destinationStage = vk::PipelineStageFlagBits::eTransfer;
-    } else if (oldLayout == vk::ImageLayout::eTransferDstOptimal &&
-               newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
-        barrier.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-            .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
-
-        sourceStage      = vk::PipelineStageFlagBits::eTransfer;
-        destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
-    } else {
-        logErrorMsg("unsupported layout transition!");
-    }
-
-    auto func = [&sourceStage, &destinationStage, &barrier](vk::CommandBuffer& cmdBuffer) {
-        cmdBuffer.pipelineBarrier( // TODO: what's this
-            sourceStage,
-            destinationStage,
-            {},
-            {},
-            {},
-            barrier);
-    };
-
-    disposableCommands(func);
-}
-
-void VulkanGraphics::copyBufferToImage(vk::Buffer buffer,
-                                       vk::Image  image,
-                                       uint32_t   width,
-                                       uint32_t   height) {
-    vk::ImageSubresourceLayers subresource{};
-    subresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
-        .setMipLevel(0)
-        .setBaseArrayLayer(0)
-        .setLayerCount(1);
-
-    vk::BufferImageCopy region{};
-    region.setBufferOffset(0)
-        .setBufferRowLength(0)
-        .setBufferImageHeight(0)
-        .setImageSubresource(subresource)
-        .setImageOffset({0, 0, 0})
-        .setImageExtent({width, height, 1});
-
-    disposableCommands([&buffer, &image, &region](vk::CommandBuffer& cmdBuffer) {
-        cmdBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
-    });
-}
-
-void VulkanGraphics::generateMipmaps(vk::Image  image,
-                                     vk::Format imageFormat,
-                                     int32_t    texWidth,
-                                     int32_t    texHeight,
-                                     uint32_t   mipLevels_) {
-    auto formatProperties = physicalDevice.getFormatProperties(imageFormat);
-    if (!(formatProperties.optimalTilingFeatures &
-          vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
-        logErrorMsg("texture image format does not support linear blitting!");
-    }
-
-    disposableCommands([&image, &texWidth, &texHeight, &mipLevels_](
-                           const vk::CommandBuffer& cmdBuffer) {
-        vk::ImageMemoryBarrier barrier{};
-        barrier.image                           = image;
-        barrier.srcQueueFamilyIndex             = vk::QueueFamilyIgnored;
-        barrier.dstQueueFamilyIndex             = vk::QueueFamilyIgnored;
-        barrier.subresourceRange.aspectMask     = vk::ImageAspectFlagBits::eColor;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount     = 1;
-        barrier.subresourceRange.levelCount     = 1;
-
-        int32_t mipWidth = texWidth, mipHeight = texHeight;
-
-        for (uint32_t i = 1; i < mipLevels_; i++) {
-            barrier.subresourceRange.baseMipLevel = i - 1;
-            barrier.oldLayout                     = vk::ImageLayout::eTransferDstOptimal;
-            barrier.newLayout                     = vk::ImageLayout::eTransferSrcOptimal;
-            barrier.srcAccessMask                 = vk::AccessFlagBits::eTransferWrite;
-            barrier.dstAccessMask                 = vk::AccessFlagBits::eTransferRead;
-
-            cmdBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                                      vk::PipelineStageFlagBits::eTransfer,
-                                      {},
-                                      {},
-                                      {},
-                                      barrier);
-
-            vk::ImageBlit blit{};
-            blit.setSrcOffsets({{{0, 0, 0}, {mipWidth, mipHeight, 1}}})
-                .setDstOffsets(
-                    {{{0, 0, 0},
-                      {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1}}});
-            blit.srcSubresource.aspectMask     = vk::ImageAspectFlagBits::eColor;
-            blit.srcSubresource.mipLevel       = i - 1;
-            blit.srcSubresource.baseArrayLayer = 0;
-            blit.srcSubresource.layerCount     = 1;
-
-            blit.dstSubresource.aspectMask     = vk::ImageAspectFlagBits::eColor;
-            blit.dstSubresource.mipLevel       = i;
-            blit.dstSubresource.baseArrayLayer = 0;
-            blit.dstSubresource.layerCount     = 1;
-
-            cmdBuffer.blitImage(image,
-                                vk::ImageLayout::eTransferSrcOptimal,
-                                image,
-                                vk::ImageLayout::eTransferDstOptimal,
-                                blit,
-                                vk::Filter::eLinear);
-
-            barrier.setOldLayout(vk::ImageLayout::eTransferSrcOptimal)
-                .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-                .setSrcAccessMask(vk::AccessFlagBits::eTransferRead)
-                .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
-
-            cmdBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                                      vk::PipelineStageFlagBits::eFragmentShader,
-                                      {},
-                                      {},
-                                      {},
-                                      barrier);
-            if (mipWidth > 1) mipWidth /= 2;
-            if (mipHeight > 1) mipHeight /= 2;
-        }
-        barrier.subresourceRange.baseMipLevel = mipLevels_ - 1;
-        barrier.setOldLayout(vk::ImageLayout::eTransferDstOptimal)
-            .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-            .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
-
-        cmdBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                                  vk::PipelineStageFlagBits::eFragmentShader,
-                                  {},
-                                  {},
-                                  {},
-                                  barrier);
-    });
-}
-
-vk::SampleCountFlagBits VulkanGraphics::getMaxUsableSampleCount() {
-    auto physicalDeviceProperties = physicalDevice.getProperties();
-
-    vk::SampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts &
-                                  physicalDeviceProperties.limits.framebufferDepthSampleCounts;
-    if (counts & vk::SampleCountFlagBits::e64) { return vk::SampleCountFlagBits::e64; };
-    if (counts & vk::SampleCountFlagBits::e32) { return vk::SampleCountFlagBits::e32; };
-    if (counts & vk::SampleCountFlagBits::e16) { return vk::SampleCountFlagBits::e16; };
-    if (counts & vk::SampleCountFlagBits::e8) { return vk::SampleCountFlagBits::e8; };
-    if (counts & vk::SampleCountFlagBits::e4) { return vk::SampleCountFlagBits::e4; };
-    if (counts & vk::SampleCountFlagBits::e2) { return vk::SampleCountFlagBits::e2; };
-    return vk::SampleCountFlagBits::e1;
 }
 
 } // namespace TBE::Graphics

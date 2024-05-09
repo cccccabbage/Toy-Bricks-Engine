@@ -5,28 +5,27 @@ namespace TBE::Graphics {
 Descriptor::~Descriptor() { destroy(); }
 
 void Descriptor::destroy() {
-    if (!pDevice) return;
     if (poolInited) {
-        pDevice->destroy(pool);
+        device.destroy(pool);
         poolInited = false;
         setsInited = false;
     }
     if (layoutInited) {
-        pDevice->destroy(layout);
+        device.destroy(layout);
         layoutInited = false;
     }
 }
 
-void Descriptor::initLayout(const std::span<vk::DescriptorSetLayoutBinding>& bindings) {
+void Descriptor::initLayout(const std::span<const vk::DescriptorSetLayoutBinding>& bindings) {
     vk::DescriptorSetLayoutCreateInfo layoutInfo{
         {}, static_cast<uint32_t>(bindings.size()), bindings.data()};
-    depackReturnValue(layout, pDevice->createDescriptorSetLayout(layoutInfo));
+    depackReturnValue(layout, device.createDescriptorSetLayout(layoutInfo));
     layoutInited = true;
 }
 
 void Descriptor::initPool(uint32_t maxSets, const std::span<vk::DescriptorPoolSize> poolSizes) {
     vk::DescriptorPoolCreateInfo poolInfo{{}, maxSets, poolSizes};
-    depackReturnValue(pool, pDevice->createDescriptorPool(poolInfo));
+    depackReturnValue(pool, device.createDescriptorPool(poolInfo));
     poolInited = true;
 }
 
@@ -39,7 +38,7 @@ void Descriptor::initSets(std::span<BufferResourceUniform> uniBuffers,
     vk::DescriptorSetAllocateInfo        allocInfo{pool, layouts};
 
     sets.resize(numSets);
-    depackReturnValue(sets, pDevice->allocateDescriptorSets(allocInfo));
+    depackReturnValue(sets, device.allocateDescriptorSets(allocInfo));
     for (size_t i = 0; i < numSets; i++) {
         vk::DescriptorBufferInfo bufferInfo{uniBuffers[i].buffer, 0, uniBuffers[i].size};
         vk::DescriptorImageInfo  imageInfo{
@@ -60,7 +59,7 @@ void Descriptor::initSets(std::span<BufferResourceUniform> uniBuffers,
             .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
             .setDescriptorCount(1)
             .setPImageInfo(&imageInfo);
-        pDevice->updateDescriptorSets(desWrites, nullptr);
+        device.updateDescriptorSets(desWrites, nullptr);
     }
 
     setsInited = true;

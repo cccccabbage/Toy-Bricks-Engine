@@ -1,4 +1,4 @@
-#include "TBEngine/file/shader/shader.hpp"
+#include "TBEngine/file/shader/shaderFile.hpp"
 
 #include <string>
 #include <filesystem>
@@ -26,7 +26,7 @@ std::vector<char> ShaderFile::read() const {
     file.read(buffer.data(), fileSize);
     file.close();
 
-    return buffer;
+    return std::move(buffer);
 }
 
 bool ShaderFile::pathValid() const {

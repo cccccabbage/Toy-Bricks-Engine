@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TBEngine/utils/macros/includeVulkan.hpp"
-#include "TBEngine/graphics/vulkanAbstract/base/base.hpp"
+#include "TBEngine/graphics/vulkanAbstract/base/vulkanAbstractBase.hpp"
 #include "TBEngine/graphics/vulkanAbstract/imageResource/imageResource.hpp"
 
 #include <functional>
@@ -11,9 +11,9 @@ namespace TBE::Graphics {
 class StagingBuffer : public VulkanAbstractBase {
 public:
     StagingBuffer() = delete;
-    StagingBuffer(const vk::Device*                  pDevice_,
-                  const std::span<std::byte>&        inData,
-                  vk::PhysicalDeviceMemoryProperties phyMemPro);
+    StagingBuffer(const vk::Device&           device_,
+                  const vk::PhysicalDevice&   phyDevice_,
+                  const std::span<std::byte>& inData);
     ~StagingBuffer();
 
 public:
@@ -29,8 +29,7 @@ public:
     void*            data = nullptr;
 
 private:
-    void createBuffer(const std::span<std::byte>&        inData,
-                      vk::PhysicalDeviceMemoryProperties phyMemPro);
+    void createBuffer(const std::span<std::byte>& inData);
 };
 
 } // namespace TBE::Graphics

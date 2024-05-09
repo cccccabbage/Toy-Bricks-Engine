@@ -6,7 +6,8 @@
 #include "TBEngine/graphics/vulkanAbstract/swapchainResource/swapchainResource.hpp"
 #include "TBEngine/graphics/vulkanAbstract/bufferResource/bufferResource.hpp"
 #include "TBEngine/graphics/vulkanAbstract/renderPass/renderPass.hpp"
-#include "TBEngine/graphics/vulkanAbstract/descriptor/descriptor.hpp"
+#include "TBEngine/graphics/texture/texture.hpp"
+#include "TBEngine/graphics/shader/shader.hpp"
 
 #include <functional>
 
@@ -17,7 +18,7 @@ class Window;
 
 namespace TBE::Graphics {
 
-class VulkanGraphics {
+class VulkanGraphics final {
 public:
     VulkanGraphics(const Window::Window* window);
 
@@ -37,19 +38,16 @@ private:
     void createExtent();
     void createLogicalDevice();
     void createSwapChain();
-    void createDescriptorSetLayout();
     void createGraphicsPipeline();
     void createRenderPass();
     void createFramebuffers();
     void createCommandPool();
     void createColorResources();
     void createDepthResources();
-    void createTextureImage();
-    void createTextureSampler();
+    void createTexture();
     void loadModel();
     void createUniformBuffers();
-    void createDescriptorPool();
-    void createDescriptorSets();
+    void createDescriptor();
     void createCommandBuffers();
     void createSyncObjects();
 
@@ -60,7 +58,7 @@ private:
 
 private:
     vk::Instance                   instance{};
-    vk::PhysicalDevice             physicalDevice{};
+    vk::PhysicalDevice             phyDevice{};
     vk::Device                     device{};
     vk::Queue                      graphicsQueue{};
     vk::Queue                      presentQueue{};
@@ -73,24 +71,22 @@ private:
     std::vector<vk::Semaphore>     imageAvailableSemaphores{};
     std::vector<vk::Semaphore>     renderFinishedSemaphores{};
     std::vector<vk::Fence>         inFlightFences{};
-    RenderPass                     renderPass{};
-    Descriptor                     descriptor{};
+    RenderPass                     renderPass{device, phyDevice};
+    Shader                         shader{device, phyDevice};
 
-    SwapchainResource swapchainR{};
+    SwapchainResource swapchainR{device, phyDevice, surface};
 
     std::vector<vk::Framebuffer> swapChainFramebuffers{};
 
     uint32_t mipLevels{};
+    Texture  texture{device, phyDevice};
 
-    ImageResource textureImageR{};
-    vk::Sampler   textureSampler{};
-
-    BufferResource                     vertexBufferRC{};
-    BufferResource                     indexBufferRC{};
+    BufferResource                     vertexBufferRC{device, phyDevice};
+    BufferResource                     indexBufferRC{device, phyDevice};
     std::vector<BufferResourceUniform> uniformBufferRs;
 
-    ImageResource depthImageR{};
-    ImageResource colorImageR{};
+    ImageResource depthImageR{device, phyDevice};
+    ImageResource colorImageR{device, phyDevice};
 
     vk::SampleCountFlagBits msaaSamples = vk::SampleCountFlagBits::e1;
 
@@ -103,48 +99,11 @@ private:
 
 private:
     vk::ShaderModule createShaderModule(const std::vector<char>& code);
-    bool             isDeviceSuitable(const vk::PhysicalDevice& device);
+    bool             isDeviceSuitable(const vk::PhysicalDevice& phyDevice);
     void             recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
-    vk::Format       findSupportedFormat(const std::vector<vk::Format>& candidates,
-                                         vk::ImageTiling                tiling,
-                                         vk::FormatFeatureFlags         features);
     vk::Format       findDepthFormat();
 
-    [[nodiscard]] std::tuple<vk::Buffer, vk::DeviceMemory>
-    createBuffer(vk::DeviceSize          size,
-                 vk::BufferUsageFlags    usage,
-                 vk::MemoryPropertyFlags properties);
-
-    std::tuple<vk::ImageCreateInfo,
-               vk::ImageViewCreateInfo,
-               vk::PhysicalDeviceMemoryProperties,
-               vk::MemoryPropertyFlags>
-    createImageInfos(uint32_t                width,
-                     uint32_t                height,
-                     uint32_t                mipLevels_,
-                     vk::SampleCountFlagBits numSamples,
-                     vk::Format              format,
-                     vk::ImageTiling         tiling,
-                     vk::ImageUsageFlags     usage,
-                     vk::MemoryPropertyFlags properties,
-                     vk::ImageAspectFlags    aspectFlags);
-
     void disposableCommands(std::function<void(vk::CommandBuffer&)> func);
-
-    void transitionImageLayout(vk::Image       image,
-                               vk::Format      format,
-                               vk::ImageLayout oldLayout,
-                               vk::ImageLayout newLayout,
-                               uint32_t        mipLevels_);
-    void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
-
-    void generateMipmaps(vk::Image  image,
-                         vk::Format imageFormat,
-                         int32_t    texWidth,
-                         int32_t    texHeight,
-                         uint32_t   mipLevels_);
-
-    vk::SampleCountFlagBits getMaxUsableSampleCount();
 
 private:
     const Window::Window* window = nullptr;
@@ -152,9 +111,6 @@ private:
     const int MAX_FRAMES_IN_FLIGHT = 2;
     uint32_t  currentFrame         = 0;
     bool      framebufferResized   = false;
-
-private:
-    vk::PhysicalDeviceMemoryProperties phyMemPro{};
 };
 
 } // namespace TBE::Graphics

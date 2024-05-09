@@ -9,25 +9,29 @@ using TBE::Utils::Log::logErrorMsg;
 BufferResource::~BufferResource() { destroy(); }
 
 void BufferResource::destroy() {
-    if (!pDevice) return;
-    pDevice->destroy(buffer);
-    pDevice->free(memory);
-    pDevice = nullptr;
+    if (bufferInited) {
+        device.destroy(buffer);
+        bufferInited = false;
+    }
+    if (memoryInited) {
+        device.free(memory);
+        memoryInited = false;
+    }
 }
 
 void BufferResource::init(
-    const vk::Device*                                            pDevice_,
     const std::span<std::byte>&                                  inData,
     vk::BufferUsageFlags                                         usage,
     vk::MemoryPropertyFlags                                      memPro,
-    const vk::PhysicalDeviceMemoryProperties&                    phyMemPro,
     std::function<void(std::function<void(vk::CommandBuffer&)>)> disposableCommands) {
-    pDevice = pDevice_;
-    size    = inData.size();
+    size = inData.size();
 
-    StagingBuffer stagingBuffer{pDevice, inData, phyMemPro};
+    std::tie(buffer, memory) = createBuffer(size, usage, memPro, phyDevice.getMemoryProperties());
+    bufferInited             = true;
+    memoryInited             = true;
 
-    std::tie(buffer, memory) = createBuffer(size, usage, memPro, phyMemPro);
+    StagingBuffer stagingBuffer{device, phyDevice, inData};
+
 
     disposableCommands([&stagingBuffer, this](vk::CommandBuffer& cmdBuffer) {
         vk::BufferCopy copyRegion{};
@@ -47,17 +51,17 @@ BufferResource::createBuffer(vk::DeviceSize                     size,
     vk::BufferCreateInfo bufferInfo{};
     bufferInfo.setSize(size).setUsage(usage).setSharingMode(vk::SharingMode::eExclusive);
 
-    depackReturnValue(buffer, pDevice->createBuffer(bufferInfo));
+    depackReturnValue(buffer, device.createBuffer(bufferInfo));
 
-    auto memRequirements = pDevice->getBufferMemoryRequirements(buffer);
+    auto memRequirements = device.getBufferMemoryRequirements(buffer);
 
     vk::MemoryAllocateInfo allocInfo{};
     allocInfo.setAllocationSize(memRequirements.size)
         .setMemoryTypeIndex(findMemoryType(phyMemPro, memRequirements.memoryTypeBits, memPro));
 
-    depackReturnValue(bufferMemory, pDevice->allocateMemory(allocInfo));
+    depackReturnValue(bufferMemory, device.allocateMemory(allocInfo));
 
-    handleVkResult(pDevice->bindBufferMemory(buffer, bufferMemory, 0));
+    handleVkResult(device.bindBufferMemory(buffer, bufferMemory, 0));
 
     return std::make_tuple(std::move(buffer), std::move(bufferMemory));
 }
@@ -65,17 +69,18 @@ BufferResource::createBuffer(vk::DeviceSize                     size,
 BufferResourceUniform::~BufferResourceUniform() { destroy(); }
 
 void BufferResourceUniform::destroy() {
-    if (!pDevice) return;
-
-    pDevice->destroy(buffer);
-    pDevice->free(memory);
-    pDevice = nullptr;
+    if (bufferInited) {
+        device.destroy(buffer);
+        bufferInited = false;
+    }
+    if (memoryInited) {
+        device.free(memory);
+        memoryInited = false;
+    }
 }
 
-void BufferResourceUniform::init(const vk::Device*                         pDevice_,
-                                 vk::DeviceSize                            size,
+void BufferResourceUniform::init(vk::DeviceSize                            size,
                                  const vk::PhysicalDeviceMemoryProperties& phyMemPro) {
-    pDevice    = pDevice_;
     bufferSize = size;
 
     std::tie(buffer, memory) = createBuffer(bufferSize,
@@ -83,7 +88,10 @@ void BufferResourceUniform::init(const vk::Device*                         pDevi
                                             vk::MemoryPropertyFlagBits::eHostVisible |
                                                 vk::MemoryPropertyFlagBits::eHostCoherent,
                                             phyMemPro);
-    depackReturnValue(mapPtr, pDevice->mapMemory(memory, 0, bufferSize));
+    bufferInited             = true;
+    memoryInited             = true;
+
+    depackReturnValue(mapPtr, device.mapMemory(memory, 0, bufferSize));
 }
 
 void BufferResourceUniform::update(const std::span<std::byte>& newData) {

@@ -6,12 +6,9 @@ using namespace TBE::Graphics::Detail;
 
 RenderPass::~RenderPass() { destroy(); }
 
-void RenderPass::initAll(const vk::Device*       pDevice_,
-                         vk::Format              swapchainFormat,
-                         vk::Format              depthFormat,
-                         vk::SampleCountFlagBits msaaSamples) {
-    setPDevice(pDevice_);
-
+void RenderPass::init(vk::Format              swapchainFormat,
+                      vk::Format              depthFormat,
+                      vk::SampleCountFlagBits msaaSamples) {
     vk::AttachmentDescription colorAttachment{};
     colorAttachment.setFormat(swapchainFormat)
         .setSamples(msaaSamples)
@@ -86,13 +83,15 @@ void RenderPass::initAll(const vk::Device*       pDevice_,
         .setDependencyCount(1)
         .setPDependencies(&dependency);
 
-    depackReturnValue(renderPass, pDevice->createRenderPass(renderPassInfo));
+    depackReturnValue(renderPass, device.createRenderPass(renderPassInfo));
+    inited = true;
 }
 
 void RenderPass::destroy() {
-    if (!pDevice) return;
-    pDevice->destroy(renderPass);
-    pDevice = nullptr;
+    if (inited) {
+        device.destroy(renderPass);
+        inited = false;
+    }
 }
 
 

@@ -1,4 +1,4 @@
-#include "TBEngine/file/texture/texture.hpp"
+#include "TBEngine/file/texture/textureFile.hpp"
 #include "TBEngine/utils/log/log.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -14,13 +14,18 @@ namespace TBE::File {
 
 std::vector<std::string> TextureFile::supportedTextureTypes = {};
 
-TextureFile::TextureFile(const std::string& filePath_) : FileBase(filePath_) {
+TextureFile::TextureFile(const std::filesystem::path& filePath_) : FileBase(filePath_) {
     if (supportedTextureTypes.empty()) {
         supportedTextureTypes.emplace_back(".jpg");
         supportedTextureTypes.emplace_back(".png");
     }
     valid = pathValid();
 }
+
+TextureFile::TextureFile(const std::string& filePath_)
+    : TextureFile(std::filesystem::path(filePath_)) {}
+
+TextureFile::TextureFile(const char* filePath_) : TextureFile(std::string(filePath_)) {}
 
 const TextureContent* TextureFile::read() {
     if (texContent.pixels) return &texContent;

@@ -5,20 +5,18 @@ namespace TBE::Graphics {
 
 using namespace TBE::Graphics::Detail;
 
-StagingBuffer::StagingBuffer(const vk::Device*                  pDevice_,
-                             const std::span<std::byte>&        inData,
-                             vk::PhysicalDeviceMemoryProperties phyMemPro) {
-    setPDevice(pDevice_);
-    createBuffer(inData, phyMemPro);
+StagingBuffer::StagingBuffer(const vk::Device&           device_,
+                             const vk::PhysicalDevice&   phyDevice_,
+                             const std::span<std::byte>& inData)
+    : VulkanAbstractBase(device_, phyDevice_) {
+    createBuffer(inData);
 }
 
 StagingBuffer::~StagingBuffer() { destroy(); }
 
 void StagingBuffer::destroy() {
-    if (!pDevice) return;
-    pDevice->destroy(buffer);
-    pDevice->free(memory);
-    pDevice = nullptr;
+    device.destroy(buffer);
+    device.free(memory);
 }
 
 void StagingBuffer::copyTo(
@@ -43,28 +41,27 @@ void StagingBuffer::copyTo(
     });
 }
 
-void StagingBuffer::createBuffer(const std::span<std::byte>&        inData,
-                                 vk::PhysicalDeviceMemoryProperties phyMemPro) {
+void StagingBuffer::createBuffer(const std::span<std::byte>& inData) {
     vk::BufferCreateInfo bufferInfo{};
     bufferInfo.setSize(inData.size())
         .setUsage(vk::BufferUsageFlagBits::eTransferSrc)
         .setSharingMode(vk::SharingMode::eExclusive);
-    depackReturnValue(buffer, pDevice->createBuffer(bufferInfo));
+    depackReturnValue(buffer, device.createBuffer(bufferInfo));
 
-    auto memReq = pDevice->getBufferMemoryRequirements(buffer);
+    auto memReq = device.getBufferMemoryRequirements(buffer);
 
     vk::MemoryAllocateInfo allocInfo{};
     allocInfo.setAllocationSize(memReq.size)
-        .setMemoryTypeIndex(findMemoryType(phyMemPro,
+        .setMemoryTypeIndex(findMemoryType(phyDevice.getMemoryProperties(),
                                            memReq.memoryTypeBits,
                                            vk::MemoryPropertyFlagBits::eHostVisible |
                                                vk::MemoryPropertyFlagBits::eHostCoherent));
-    depackReturnValue(memory, pDevice->allocateMemory(allocInfo));
-    handleVkResult(pDevice->bindBufferMemory(buffer, memory, 0));
+    depackReturnValue(memory, device.allocateMemory(allocInfo));
+    handleVkResult(device.bindBufferMemory(buffer, memory, 0));
 
-    depackReturnValue(data, pDevice->mapMemory(memory, 0, inData.size()));
+    depackReturnValue(data, device.mapMemory(memory, 0, inData.size()));
     std::memcpy(data, inData.data(), static_cast<size_t>(inData.size()));
-    pDevice->unmapMemory(memory);
+    device.unmapMemory(memory);
 }
 
 } // namespace TBE::Graphics

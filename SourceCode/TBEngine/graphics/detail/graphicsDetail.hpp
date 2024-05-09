@@ -53,14 +53,28 @@ struct QueueFamilyIndices {
         if (!isComplete()) { logErrorMsg("Cannot find suitable queue families!"); }
     }
 
-    std::set<uint32_t> toSet() const {
-        std::set<uint32_t> ret = {};
-        if (isComplete()) ret = {graphicsFamily.value(), presentFamily.value()};
+    // std::set<uint32_t> toSet() const {
+    //     std::set<uint32_t> ret = {};
+    //     if (isComplete()) ret = {graphicsFamily.value(), presentFamily.value()};
+    //
+    //     return std::move(ret);
+    // }
 
+    operator std::set<uint32_t>() {
+        std::set<uint32_t> ret{};
+        if (isComplete()) ret = {graphicsFamily.value(), presentFamily.value()};
         return std::move(ret);
     }
 
-    std::array<uint32_t, 2> toArray() const {
+    // std::array<uint32_t, 2> toArray() const {
+    //     std::array<uint32_t, 2> ret = {};
+    //
+    //     if (isComplete()) ret = {graphicsFamily.value(), presentFamily.value()};
+    //
+    //     return std::move(ret);
+    // }
+
+    operator std::array<uint32_t, 2>() const {
         std::array<uint32_t, 2> ret = {};
 
         if (isComplete()) ret = {graphicsFamily.value(), presentFamily.value()};
@@ -226,6 +240,39 @@ inline uint32_t findMemoryType(const vk::PhysicalDeviceMemoryProperties& memProp
     }
 
     logErrorMsg("failed to find suitable memory type!");
+    return {};
+}
+
+inline vk::SampleCountFlagBits getMaxUsableSampleCount(const vk::PhysicalDevice& phyDevice) {
+    auto physicalDeviceProperties = phyDevice.getProperties();
+
+    vk::SampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts &
+                                  physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+    if (counts & vk::SampleCountFlagBits::e64) { return vk::SampleCountFlagBits::e64; };
+    if (counts & vk::SampleCountFlagBits::e32) { return vk::SampleCountFlagBits::e32; };
+    if (counts & vk::SampleCountFlagBits::e16) { return vk::SampleCountFlagBits::e16; };
+    if (counts & vk::SampleCountFlagBits::e8) { return vk::SampleCountFlagBits::e8; };
+    if (counts & vk::SampleCountFlagBits::e4) { return vk::SampleCountFlagBits::e4; };
+    if (counts & vk::SampleCountFlagBits::e2) { return vk::SampleCountFlagBits::e2; };
+    return vk::SampleCountFlagBits::e1;
+}
+
+inline vk::Format findSupportedFormat(const vk::PhysicalDevice&      phyDevice,
+                                      const std::vector<vk::Format>& candidates,
+                                      vk::ImageTiling                tiling,
+                                      vk::FormatFeatureFlags         features) {
+    for (vk::Format format : candidates) {
+        auto props = phyDevice.getFormatProperties(format);
+        if (tiling == vk::ImageTiling::eLinear &&
+            (props.linearTilingFeatures & features) == features) {
+            return format;
+        } else if (tiling == vk::ImageTiling::eOptimal &&
+                   (props.optimalTilingFeatures & features) == features) {
+            return format;
+        }
+    }
+
+    logErrorMsg("failed to find supported format!");
     return {};
 }
 
