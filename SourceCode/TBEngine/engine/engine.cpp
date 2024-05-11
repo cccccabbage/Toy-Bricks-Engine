@@ -6,18 +6,11 @@ extern const TBE::Utils::Log::Logger* logger;
 
 namespace TBE::Engine {
 
-Engine::Engine() {}
+Engine::Engine() : winForm({1280, 720}), graphic(winForm) { init(); }
 
-void Engine::init() {
-    logger->trace("Initializing Engine.");
+Engine::~Engine() { exit(); }
 
-    winForm.init();
-    graphic.initVulkan();
-
-    winForm.setResizeFlag(graphic.getPFrameBufferResized());
-
-    logger->trace("Engine initialized.");
-}
+void Engine::init() { winForm.setResizeFlag(graphic.getPFrameBufferResized()); }
 
 void Engine::runLoop() {
     logger->trace("Start of draw loop.");
@@ -31,14 +24,7 @@ void Engine::runLoop() {
     logger->trace("End of draw loop.");
 }
 
-void Engine::exit() {
-    logger->trace("Exiting Engine.");
-
-    graphic.cleanup();
-    winForm.exit();
-
-    logger->trace("Engine exited.");
-}
+void Engine::exit() { logger->trace("Exiting Engine."); }
 
 void Engine::tick() {
     winForm.tick();

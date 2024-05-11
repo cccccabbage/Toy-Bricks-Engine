@@ -5,6 +5,7 @@
 #include "TBEngine/window/window.hpp"
 #include "TBEngine/math/dataFormat.hpp"
 #include "TBEngine/file/model/model.hpp"
+#include "TBEngine/ui/ui.hpp"
 
 #include <utility>
 
@@ -25,7 +26,9 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(VkInstance           
 namespace TBE::Graphics { // VulkanGraphics
 using namespace TBE::Graphics::Detail;
 
-VulkanGraphics::VulkanGraphics(const Window::Window* window_) : window(window_) {}
+VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_) { initVulkan(); }
+
+VulkanGraphics::~VulkanGraphics() { cleanup(); }
 
 void VulkanGraphics::initVulkan() {
     logger->trace("Initializing graphic.");
@@ -201,8 +204,8 @@ void VulkanGraphics::createInstance() {
 
 void VulkanGraphics::createSurface() {
     auto createInfo = vk::Win32SurfaceCreateInfoKHR()
-                          .setHwnd(window->getWin32Window())
-                          .setHinstance(window->getModuleHandle());
+                          .setHwnd(window.getWin32Window())
+                          .setHinstance(window.getModuleHandle());
     depackReturnValue(surface, instance.createWin32SurfaceKHR(createInfo));
 }
 
@@ -242,13 +245,13 @@ void VulkanGraphics::pickPhysicalDevice() {
 void VulkanGraphics::createExtent() {
     vk::SurfaceCapabilitiesKHR capabilities{};
     depackReturnValue(capabilities, phyDevice.getSurfaceCapabilitiesKHR(surface));
-    extent = chooseSwapExtent(capabilities, window->getFramebufferSize());
+    extent = chooseSwapExtent(capabilities, window.getFramebufferSize());
 }
 
 void VulkanGraphics::createLogicalDevice() {
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos{};
 
-    QueueFamilyIndices indices             = QueueFamilyIndices(phyDevice, &surface);
+    QueueFamilyIndices indices             = QueueFamilyIndices(phyDevice, surface);
     std::set<uint32_t> uniqueQueueFamilies = indices;
 
     float queuePriority = 1.0f;
@@ -276,7 +279,7 @@ void VulkanGraphics::createLogicalDevice() {
     presentQueue  = device.getQueue(indices.presentFamily.value(), 0);
 }
 
-void VulkanGraphics::createSwapChain() { swapchainR.init(phyDevice, window->getFramebufferSize()); }
+void VulkanGraphics::createSwapChain() { swapchainR.init(phyDevice, window.getFramebufferSize()); }
 
 void VulkanGraphics::createRenderPass() {
     renderPass.init(swapchainR.format, findDepthFormat(), msaaSamples);
@@ -410,7 +413,7 @@ void VulkanGraphics::createFramebuffers() {
 }
 
 void VulkanGraphics::createCommandPool() {
-    auto indices = QueueFamilyIndices(phyDevice, &surface);
+    auto indices = QueueFamilyIndices(phyDevice, surface);
 
     vk::CommandPoolCreateInfo poolInfo{};
     poolInfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
@@ -526,10 +529,10 @@ void VulkanGraphics::cleanupSwapChain() {
 }
 
 void VulkanGraphics::recreateSwapChain() {
-    auto bufferSize = window->getFramebufferSize();
+    auto bufferSize = window.getFramebufferSize();
     while (bufferSize.width == 0 || bufferSize.height == 0) {
-        bufferSize = window->getFramebufferSize();
-        window->waitEvents();
+        bufferSize = window.getFramebufferSize();
+        window.waitEvents();
     }
 
     while (device.waitIdle() == vk::Result::eTimeout) {
@@ -576,7 +579,7 @@ vk::ShaderModule VulkanGraphics::createShaderModule(const std::vector<char>& cod
 }
 
 bool VulkanGraphics::isDeviceSuitable(const vk::PhysicalDevice& phyDevice) {
-    QueueFamilyIndices indices = QueueFamilyIndices(phyDevice, &surface);
+    QueueFamilyIndices indices = QueueFamilyIndices(phyDevice, surface);
 
     auto extensionsSupported = checkDeviceExtensionSupport(phyDevice, deviceExtensions);
 

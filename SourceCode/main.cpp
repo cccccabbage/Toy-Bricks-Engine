@@ -8,10 +8,10 @@ int main() {
     TBE::Utils::setRootPath();
     logger = TBE::Utils::Log::Logger::getLogger();
 
+    logger->trace("Initializing Engine.");
     TBE::Engine::Engine engine{};
-    engine.init();
+    logger->trace("Engine initialized.");
     engine.runLoop();
-    engine.exit();
 
     return 0;
 }

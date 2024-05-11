@@ -22,11 +22,14 @@ struct BufferSize {
 
 class Window {
 public:
-    Window(BufferSize size) : winSize(size) {}
+    Window(BufferSize size);
+    ~Window();
 
 public:
-    void init();
     void tick();
+
+private:
+    void init();
     void exit();
 
 public:
@@ -37,7 +40,7 @@ public:
 
 private:
     GLFWwindow* pWindow = nullptr;
-    BufferSize  winSize{};
+    BufferSize  winSize;
     const char* winTitle = "Toy Bricks Engine";
 
     bool* framebufferResized = nullptr;
@@ -45,6 +48,7 @@ private:
 public:
     HWND       getWin32Window() const { return glfwGetWin32Window(pWindow); }
     auto       getModuleHandle() const { return GetModuleHandle(nullptr); }
+    auto       getPWindow() { return pWindow; }
     BufferSize getFramebufferSize() const {
         int width, height;
         glfwGetFramebufferSize(pWindow, &width, &height);

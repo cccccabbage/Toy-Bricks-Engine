@@ -2,24 +2,26 @@
 
 #include "TBEngine/graphics/graphics.hpp"
 #include "TBEngine/window/window.hpp"
+#include "TBEngine/ui/ui.hpp"
 
 namespace TBE::Engine {
 
 class Engine {
 public:
     Engine();
+    ~Engine();
 
 public:
-    void init();
     void runLoop();
+
+private:
+    void init();
+    void tick();
     void exit();
 
 private:
-    void tick();
-
-private:
-    Window::Window           winForm{{1280, 720}};
-    Graphics::VulkanGraphics graphic{&winForm};
+    Window::Window           winForm;
+    Graphics::VulkanGraphics graphic;
 };
 
 } // namespace TBE::Engine

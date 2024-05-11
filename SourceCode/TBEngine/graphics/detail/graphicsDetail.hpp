@@ -37,14 +37,14 @@ struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily = std::nullopt;
     std::optional<uint32_t> presentFamily  = std::nullopt;
 
-    QueueFamilyIndices(const vk::PhysicalDevice& device, const vk::SurfaceKHR* surface) {
+    QueueFamilyIndices(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface) {
         auto queueFamilies = device.getQueueFamilyProperties();
         int  i             = 0;
         for (const auto& queueFamily : queueFamilies) {
             if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) { graphicsFamily = i; }
 
             vk::Bool32 value{};
-            depackReturnValue(value, device.getSurfaceSupportKHR(i, *surface));
+            depackReturnValue(value, device.getSurfaceSupportKHR(i, surface));
             if (value) { presentFamily = i; }
 
             if (isComplete()) break;
@@ -53,26 +53,11 @@ struct QueueFamilyIndices {
         if (!isComplete()) { logErrorMsg("Cannot find suitable queue families!"); }
     }
 
-    // std::set<uint32_t> toSet() const {
-    //     std::set<uint32_t> ret = {};
-    //     if (isComplete()) ret = {graphicsFamily.value(), presentFamily.value()};
-    //
-    //     return std::move(ret);
-    // }
-
     operator std::set<uint32_t>() {
         std::set<uint32_t> ret{};
         if (isComplete()) ret = {graphicsFamily.value(), presentFamily.value()};
         return std::move(ret);
     }
-
-    // std::array<uint32_t, 2> toArray() const {
-    //     std::array<uint32_t, 2> ret = {};
-    //
-    //     if (isComplete()) ret = {graphicsFamily.value(), presentFamily.value()};
-    //
-    //     return std::move(ret);
-    // }
 
     operator std::array<uint32_t, 2>() const {
         std::array<uint32_t, 2> ret = {};

@@ -47,7 +47,7 @@ void SwapchainResource::createSwapChain(const std::pair<uint32_t, uint32_t>& buf
         .setImageArrayLayers(1)
         .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
 
-    auto                    indices            = QueueFamilyIndices(phyDevice, &surface);
+    auto                    indices            = QueueFamilyIndices(phyDevice, surface);
     std::array<uint32_t, 2> queueFamilyIndices = indices;
 
     if (indices.graphicsFamily != indices.presentFamily) {

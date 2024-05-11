@@ -1,7 +1,8 @@
 #pragma once
 
-#include "TBEngine/file/model/model.hpp"
 #include "TBEngine/utils/macros/includeVulkan.hpp"
+
+#include "TBEngine/file/model/model.hpp"
 #include "TBEngine/graphics/vulkanAbstract/imageResource/imageResource.hpp"
 #include "TBEngine/graphics/vulkanAbstract/swapchainResource/swapchainResource.hpp"
 #include "TBEngine/graphics/vulkanAbstract/bufferResource/bufferResource.hpp"
@@ -20,12 +21,15 @@ namespace TBE::Graphics {
 
 class VulkanGraphics final {
 public:
-    VulkanGraphics(const Window::Window* window);
+    VulkanGraphics(Window::Window& window_);
+    ~VulkanGraphics();
+
+private:
+    void initVulkan();
+    void cleanup();
 
 public:
-    void initVulkan();
     void tick();
-    void cleanup();
 
 public:
     bool* getPFrameBufferResized();
@@ -83,7 +87,7 @@ private:
 
     BufferResource                     vertexBufferRC{device, phyDevice};
     BufferResource                     indexBufferRC{device, phyDevice};
-    std::vector<BufferResourceUniform> uniformBufferRs;
+    std::vector<BufferResourceUniform> uniformBufferRs{};
 
     ImageResource depthImageR{device, phyDevice};
     ImageResource colorImageR{device, phyDevice};
@@ -92,7 +96,7 @@ private:
 
     const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
     const std::vector<const char*> deviceExtensions = {vk::KHRSwapchainExtensionName};
-    vk::DebugUtilsMessengerEXT     debugMessenger   = {};
+    vk::DebugUtilsMessengerEXT     debugMessenger{};
 
 private:
     TBE::File::ModelFile model{"Resources/Models/viking_room.obj"};
@@ -106,7 +110,7 @@ private:
     void disposableCommands(std::function<void(vk::CommandBuffer&)> func);
 
 private:
-    const Window::Window* window = nullptr;
+    Window::Window& window;
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
     uint32_t  currentFrame         = 0;

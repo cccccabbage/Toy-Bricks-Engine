@@ -12,6 +12,10 @@ extern const TBE::Utils::Log::Logger* logger;
 
 namespace TBE::Window {
 
+Window::Window(BufferSize size) : winSize(size) { init(); }
+
+Window::~Window() { exit(); }
+
 std::vector<const char*> getRequiredExtensions() {
     uint32_t     glfwExtensionCount = 0;
     const char** glfwExtensions;
