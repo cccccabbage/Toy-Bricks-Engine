@@ -12,6 +12,10 @@
 
 #include <functional>
 
+namespace TBE::Ui {
+struct UiCreateInfo;
+}
+
 
 namespace TBE::Window {
 class Window;
@@ -24,15 +28,17 @@ public:
     VulkanGraphics(Window::Window& window_);
     ~VulkanGraphics();
 
+public:
+    void tick();
+
 private:
     void initVulkan();
     void cleanup();
 
 public:
-    void tick();
-
-public:
-    bool* getPFrameBufferResized();
+    bool*            getPFrameBufferResized();
+    Ui::UiCreateInfo getUiCreateInfo();
+    void             bindAddCmdBuffer(vk::CommandBuffer& cmdBuffer); // bind additional cmd buffer
 
 private:
     void createInstance();
@@ -72,6 +78,7 @@ private:
     vk::Pipeline                   graphicsPipeline{};
     vk::CommandPool                commandPool{};
     std::vector<vk::CommandBuffer> commandBuffers{};
+    std::vector<vk::CommandBuffer> addCmdBuffers{};
     std::vector<vk::Semaphore>     imageAvailableSemaphores{};
     std::vector<vk::Semaphore>     renderFinishedSemaphores{};
     std::vector<vk::Fence>         inFlightFences{};
@@ -80,7 +87,7 @@ private:
 
     SwapchainResource swapchainR{device, phyDevice, surface};
 
-    std::vector<vk::Framebuffer> swapChainFramebuffers{};
+    std::vector<vk::Framebuffer> swapchainFramebuffers{};
 
     uint32_t mipLevels{};
     Texture  texture{device, phyDevice};

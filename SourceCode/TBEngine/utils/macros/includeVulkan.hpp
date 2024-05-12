@@ -22,7 +22,7 @@
 #    define depackReturnValue(saveValue, expr) depackReturnValueM(saveValue, expr, "bad vk::Result")
 
 #    define handleVkResultM(expr, logMsg)                                                          \
-        if ((expr) != vk::Result::eSuccess) { logErrorMsg((logMsg)); }
+        if ((expr) != vk::Result::eSuccess) { TBE::Utils::Log::logErrorMsg((logMsg)); }
 
 #    define handleVkResult(expr) handleVkResultM(expr, "bad vk::Result")
 

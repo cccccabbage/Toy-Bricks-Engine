@@ -96,11 +96,14 @@ void VulkanGraphics::tick() {
     vk::PipelineStageFlags waitStages[]       = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
     vk::Semaphore          signalSemaphores[] = {renFinSemaphore};
     vk::SubmitInfo         submitInfo{};
+
+    auto allCmdBuffers = addCmdBuffers;
+    allCmdBuffers.emplace_back(cmdBuffer);
+
     submitInfo.setWaitSemaphoreCount(1)
         .setPWaitSemaphores(waitSemaphores)
         .setPWaitDstStageMask(waitStages)
-        .setCommandBufferCount(1)
-        .setPCommandBuffers(&cmdBuffer)
+        .setCommandBuffers(allCmdBuffers)
         .setSignalSemaphoreCount(1)
         .setPSignalSemaphores(signalSemaphores);
 
@@ -114,12 +117,10 @@ void VulkanGraphics::tick() {
         .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
         .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
 
-    vk::SwapchainKHR   swapchains[] = {swapchainR.swapchain};
     vk::PresentInfoKHR presentInfo{};
     presentInfo.setWaitSemaphoreCount(1)
         .setPWaitSemaphores(signalSemaphores)
-        .setSwapchainCount(1)
-        .setPSwapchains(swapchains)
+        .setSwapchains(swapchainR.swapchain)
         .setPImageIndices(&imageIndex);
 
     result = presentQueue.presentKHR(presentInfo);
@@ -132,6 +133,8 @@ void VulkanGraphics::tick() {
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+    allCmdBuffers.pop_back();
 }
 
 void VulkanGraphics::cleanup() {
@@ -172,11 +175,31 @@ void VulkanGraphics::cleanup() {
 
 bool* VulkanGraphics::getPFrameBufferResized() { return &framebufferResized; }
 
+Ui::UiCreateInfo VulkanGraphics::getUiCreateInfo() {
+    Ui::UiCreateInfo info{};
+    info.window              = window.getPWindow();
+    info.instance            = instance;
+    info.phyDevice           = phyDevice;
+    info.device              = device;
+    info.queueFamilyIndex    = QueueFamilyIndices(phyDevice, surface).graphicsFamily.value();
+    info.queue               = graphicsQueue;
+    info.minImageCount       = MAX_FRAMES_IN_FLIGHT;
+    info.swapchainFormat     = swapchainR.format;
+    info.swapchainImageViews = swapchainR.views;
+    info.width               = window.getFramebufferSize().width;
+    info.height              = window.getFramebufferSize().height;
+
+    return info;
+}
+
+void VulkanGraphics::bindAddCmdBuffer(vk::CommandBuffer& cmdBuffer) {
+    addCmdBuffers.emplace_back(cmdBuffer);
+}
+
 void VulkanGraphics::createInstance() {
     if (inDebug && !checkValidationLayerSupport(validationLayers)) {
         logErrorMsg("Validation layers requested, but not available.");
-    }
-
+    };
     vk::ApplicationInfo appInfo{};
     appInfo.setPApplicationName("Toy Bricks Engine")
         .setApplicationVersion(1)
@@ -187,17 +210,11 @@ void VulkanGraphics::createInstance() {
     auto extensions = getRequiredExtensions();
 
     vk::InstanceCreateInfo createInfo{};
-    createInfo.setPApplicationInfo(&appInfo)
-        .setEnabledLayerCount(0)
-        .setEnabledExtensionCount(static_cast<uint32_t>(extensions.size()))
-        .setPpEnabledExtensionNames(extensions.data());
+    createInfo.setPApplicationInfo(&appInfo).setEnabledLayerCount(0).setPEnabledExtensionNames(
+        extensions);
 
     auto dbgCreateInfo = genDebugCreateInfo();
-    if (inDebug) {
-        createInfo.setEnabledLayerCount(static_cast<uint32_t>(validationLayers.size()))
-            .setPpEnabledLayerNames(validationLayers.data())
-            .setPNext(&dbgCreateInfo);
-    }
+    if (inDebug) { createInfo.setPEnabledLayerNames(validationLayers).setPNext(&dbgCreateInfo); }
 
     depackReturnValue(instance, vk::createInstance(createInfo));
 }
@@ -267,10 +284,8 @@ void VulkanGraphics::createLogicalDevice() {
 
     vk::DeviceCreateInfo createInfo{};
     createInfo.setFlags(vk::DeviceCreateFlags())
-        .setQueueCreateInfoCount(static_cast<uint32_t>(queueCreateInfos.size()))
-        .setPQueueCreateInfos(queueCreateInfos.data())
-        .setEnabledExtensionCount(static_cast<uint32_t>(deviceExtensions.size()))
-        .setPpEnabledExtensionNames(deviceExtensions.data())
+        .setQueueCreateInfos(queueCreateInfos)
+        .setPEnabledExtensionNames(deviceExtensions)
         .setPEnabledFeatures(&deviceFeatures);
 
     depackReturnValue(device, phyDevice.createDevice(createInfo));
@@ -294,8 +309,7 @@ void VulkanGraphics::createGraphicsPipeline() {
                                                    vk::DynamicState::eScissor};
 
     vk::PipelineDynamicStateCreateInfo dynamicState{};
-    dynamicState.setDynamicStateCount(static_cast<uint32_t>(dynamicStates.size()))
-        .setPDynamicStates(dynamicStates.data());
+    dynamicState.setDynamicStates(dynamicStates);
 
     auto bindingDescription    = getBindingDescription();
     auto attributeDescriptions = getAttributeDescriptions();
@@ -303,8 +317,7 @@ void VulkanGraphics::createGraphicsPipeline() {
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.setVertexBindingDescriptionCount(1)
         .setPVertexBindingDescriptions(&bindingDescription)
-        .setVertexAttributeDescriptionCount(static_cast<uint32_t>(attributeDescriptions.size()))
-        .setPVertexAttributeDescriptions(attributeDescriptions.data());
+        .setVertexAttributeDescriptions(attributeDescriptions);
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList)
@@ -373,8 +386,7 @@ void VulkanGraphics::createGraphicsPipeline() {
     depackReturnValue(pipelineLayout, device.createPipelineLayout(pipelineLayoutInfo));
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
-    pipelineInfo.setStageCount(static_cast<uint32_t>(shaderStages.size()))
-        .setPStages(shaderStages.data())
+    pipelineInfo.setStages(shaderStages)
         .setPVertexInputState(&vertexInputInfo)
         .setPInputAssemblyState(&inputAssembly)
         .setPViewportState(&viewportState)
@@ -395,20 +407,19 @@ void VulkanGraphics::createGraphicsPipeline() {
 }
 
 void VulkanGraphics::createFramebuffers() {
-    swapChainFramebuffers.resize(swapchainR.views.size());
+    swapchainFramebuffers.resize(swapchainR.views.size());
 
     for (size_t i = 0; i < swapchainR.views.size(); i++) {
         std::array attachments = {
             colorImageR.imageView, depthImageR.imageView, swapchainR.views[i]};
         vk::FramebufferCreateInfo framebufferInfo{};
         framebufferInfo.setRenderPass(renderPass.renderPass)
-            .setAttachmentCount(static_cast<uint32_t>(attachments.size()))
-            .setPAttachments(attachments.data())
+            .setAttachments(attachments)
             .setWidth(extent.width)
             .setHeight(extent.height)
             .setLayers(1);
 
-        depackReturnValue(swapChainFramebuffers[i], device.createFramebuffer(framebufferInfo));
+        depackReturnValue(swapchainFramebuffers[i], device.createFramebuffer(framebufferInfo));
     }
 }
 
@@ -521,8 +532,8 @@ void VulkanGraphics::cleanupSwapChain() {
     colorImageR.destroy();
     depthImageR.destroy();
 
-    for (size_t i = 0; i < swapChainFramebuffers.size(); i++) {
-        device.destroy(swapChainFramebuffers[i]);
+    for (size_t i = 0; i < swapchainFramebuffers.size(); i++) {
+        device.destroy(swapchainFramebuffers[i]);
     }
 
     swapchainR.destroy();
@@ -596,9 +607,9 @@ bool VulkanGraphics::isDeviceSuitable(const vk::PhysicalDevice& phyDevice) {
            supportedFeatures.samplerAnisotropy;
 }
 
-void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
+void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer cmdBuffer, uint32_t imageIndex) {
     vk::CommandBufferBeginInfo beginInfo{};
-    handleVkResult(commandBuffer.begin(beginInfo));
+    handleVkResult(cmdBuffer.begin(beginInfo));
 
     vk::Rect2D renderArea{};
     renderArea.setOffset({0, 0}).setExtent(extent);
@@ -608,13 +619,12 @@ void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32
 
     vk::RenderPassBeginInfo renderPassInfo{};
     renderPassInfo.setRenderPass(renderPass.renderPass)
-        .setFramebuffer(swapChainFramebuffers[imageIndex])
+        .setFramebuffer(swapchainFramebuffers[imageIndex])
         .setRenderArea(renderArea)
-        .setClearValueCount(static_cast<uint32_t>(clearValues.size()))
-        .setPClearValues(clearValues.data());
-    commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+        .setClearValues(clearValues);
+    cmdBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+    cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
     vk::Viewport viewport{};
     viewport.setX(0.0f)
@@ -623,27 +633,27 @@ void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32
         .setHeight(static_cast<float>(extent.height))
         .setMinDepth(0.0f)
         .setMaxDepth(1.0f);
-    commandBuffer.setViewport(0, viewport);
+    cmdBuffer.setViewport(0, viewport);
 
     vk::Rect2D scissor{};
     scissor.setOffset({0, 0}).setExtent(extent);
-    commandBuffer.setScissor(0, scissor);
+    cmdBuffer.setScissor(0, scissor);
 
     std::array                                       vertexBuffers = {vertexBufferRC.buffer};
     std::array<vk::DeviceSize, vertexBuffers.size()> offsets       = {0};
-    commandBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
-    commandBuffer.bindIndexBuffer(indexBufferRC.buffer, 0, vk::IndexType::eUint32);
+    cmdBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
+    cmdBuffer.bindIndexBuffer(indexBufferRC.buffer, 0, vk::IndexType::eUint32);
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                                     pipelineLayout,
-                                     0,
-                                     shader.descriptors.sets[currentFrame],
-                                     static_cast<uint32_t>(0));
+    cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                                 pipelineLayout,
+                                 0,
+                                 shader.descriptors.sets[currentFrame],
+                                 static_cast<uint32_t>(0));
 
-    commandBuffer.drawIndexed(static_cast<uint32_t>(model.getIndices().size()), 1, 0, 0, 0);
+    cmdBuffer.drawIndexed(static_cast<uint32_t>(model.getIndices().size()), 1, 0, 0, 0);
 
-    commandBuffer.endRenderPass();
-    handleVkResult(commandBuffer.end());
+    cmdBuffer.endRenderPass();
+    handleVkResult(cmdBuffer.end());
 }
 
 vk::Format VulkanGraphics::findDepthFormat() {

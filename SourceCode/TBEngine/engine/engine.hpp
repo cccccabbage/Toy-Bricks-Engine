@@ -22,6 +22,7 @@ private:
 private:
     Window::Window           winForm;
     Graphics::VulkanGraphics graphic;
+    Ui::Ui                   ui;
 };
 
 } // namespace TBE::Engine
