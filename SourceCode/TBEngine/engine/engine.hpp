@@ -2,7 +2,6 @@
 
 #include "TBEngine/graphics/graphics.hpp"
 #include "TBEngine/window/window.hpp"
-#include "TBEngine/ui/ui.hpp"
 
 namespace TBE::Engine {
 
@@ -22,7 +21,6 @@ private:
 private:
     Window::Window           winForm;
     Graphics::VulkanGraphics graphic;
-    Ui::Ui                   ui;
 };
 
 } // namespace TBE::Engine

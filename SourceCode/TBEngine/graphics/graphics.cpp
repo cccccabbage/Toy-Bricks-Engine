@@ -5,7 +5,10 @@
 #include "TBEngine/window/window.hpp"
 #include "TBEngine/math/dataFormat.hpp"
 #include "TBEngine/file/model/model.hpp"
-#include "TBEngine/ui/ui.hpp"
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 
 #include <utility>
 
@@ -26,7 +29,10 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(VkInstance           
 namespace TBE::Graphics { // VulkanGraphics
 using namespace TBE::Graphics::Detail;
 
-VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_) { initVulkan(); }
+VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_) {
+    initVulkan();
+    initIMGui();
+}
 
 VulkanGraphics::~VulkanGraphics() { cleanup(); }
 
@@ -64,7 +70,45 @@ void VulkanGraphics::initVulkan() {
     logger->trace("Graphic initialized.");
 }
 
+void VulkanGraphics::initIMGui() {
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+    ImGui_ImplGlfw_InitForVulkan(window.getPWindow(), true);
+
+    // init imgui descriptor pool
+    vk::DescriptorPoolSize poolSize{};
+    poolSize.setType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(1);
+
+    vk::DescriptorPoolCreateInfo poolInfo{};
+    poolInfo.setPoolSizeCount(1).setPPoolSizes(&poolSize).setMaxSets(1);
+
+    depackReturnValue(imguiDescPool, device.createDescriptorPool(poolInfo));
+
+    ImGui_ImplVulkan_InitInfo info{};
+    info.Queue          = graphicsQueue;
+    info.Device         = device;
+    info.PhysicalDevice = phyDevice;
+    info.Subpass        = 0;
+    info.Instance       = instance;
+    info.Allocator      = nullptr;
+    info.ImageCount     = MAX_FRAMES_IN_FLIGHT;
+    info.RenderPass     = renderPass.renderPass;
+    info.MSAASamples    = (VkSampleCountFlagBits)msaaSamples;
+    info.QueueFamily    = QueueFamilyIndices(phyDevice, surface).graphicsFamily.value();
+    info.MinImageCount  = MAX_FRAMES_IN_FLIGHT;
+    // info.PipelineCache = {};
+    info.DescriptorPool  = imguiDescPool;
+    info.CheckVkResultFn = [](VkResult res) { assert(res == VK_SUCCESS); };
+
+    ImGui_ImplVulkan_Init(&info);
+}
+
 void VulkanGraphics::tick() {
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
     vk::Fence&         fence           = inFlightFences[currentFrame];
     vk::Semaphore&     imgAviSemaphore = imageAvailableSemaphores[currentFrame];
     vk::Semaphore&     renFinSemaphore = renderFinishedSemaphores[currentFrame];
@@ -174,23 +218,6 @@ void VulkanGraphics::cleanup() {
 }
 
 bool* VulkanGraphics::getPFrameBufferResized() { return &framebufferResized; }
-
-Ui::UiCreateInfo VulkanGraphics::getUiCreateInfo() {
-    Ui::UiCreateInfo info{};
-    info.window              = window.getPWindow();
-    info.instance            = instance;
-    info.phyDevice           = phyDevice;
-    info.device              = device;
-    info.queueFamilyIndex    = QueueFamilyIndices(phyDevice, surface).graphicsFamily.value();
-    info.queue               = graphicsQueue;
-    info.minImageCount       = MAX_FRAMES_IN_FLIGHT;
-    info.swapchainFormat     = swapchainR.format;
-    info.swapchainImageViews = swapchainR.views;
-    info.width               = window.getFramebufferSize().width;
-    info.height              = window.getFramebufferSize().height;
-
-    return info;
-}
 
 void VulkanGraphics::bindAddCmdBuffer(vk::CommandBuffer& cmdBuffer) {
     addCmdBuffers.emplace_back(cmdBuffer);
@@ -651,6 +678,11 @@ void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer cmdBuffer, uint32_t i
                                  static_cast<uint32_t>(0));
 
     cmdBuffer.drawIndexed(static_cast<uint32_t>(model.getIndices().size()), 1, 0, 0, 0);
+
+    ImGui::ShowDemoWindow();
+    ImGui::Render();
+    ImDrawData* drawData = ImGui::GetDrawData();
+    ImGui_ImplVulkan_RenderDrawData(drawData, cmdBuffer);
 
     cmdBuffer.endRenderPass();
     handleVkResult(cmdBuffer.end());

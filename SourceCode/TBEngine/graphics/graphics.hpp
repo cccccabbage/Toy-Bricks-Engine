@@ -12,11 +12,6 @@
 
 #include <functional>
 
-namespace TBE::Ui {
-struct UiCreateInfo;
-}
-
-
 namespace TBE::Window {
 class Window;
 }
@@ -35,10 +30,13 @@ private:
     void initVulkan();
     void cleanup();
 
+private:
+    void initIMGui();
+    vk::DescriptorPool imguiDescPool{};
+
 public:
-    bool*            getPFrameBufferResized();
-    Ui::UiCreateInfo getUiCreateInfo();
-    void             bindAddCmdBuffer(vk::CommandBuffer& cmdBuffer); // bind additional cmd buffer
+    bool* getPFrameBufferResized();
+    void  bindAddCmdBuffer(vk::CommandBuffer& cmdBuffer); // bind additional cmd buffer
 
 private:
     void createInstance();
