@@ -1,7 +1,7 @@
 #pragma once
 
-#include "TBEngine/graphics/graphics.hpp"
-#include "TBEngine/window/window.hpp"
+#include "TBEngine/core/graphics/graphics.hpp"
+#include "TBEngine/core/window/window.hpp"
 
 namespace TBE::Engine {
 

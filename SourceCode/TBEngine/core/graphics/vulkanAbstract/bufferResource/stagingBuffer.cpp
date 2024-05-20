@@ -1,0 +1,69 @@
+#include "stagingBuffer.hpp"
+#include "TBEngine/core/graphics/detail/graphicsDetail.hpp"
+#include "TBEngine/core/graphics/graphics.hpp"
+
+namespace TBE::Graphics
+{
+
+using namespace TBE::Graphics::Detail;
+
+StagingBuffer::StagingBuffer(const std::span<std::byte>& inData) : VulkanAbstractBase()
+{
+    createBuffer(inData);
+}
+
+StagingBuffer::~StagingBuffer()
+{
+    destroy();
+}
+
+void StagingBuffer::destroy()
+{
+    device.destroy(buffer);
+    device.free(memory);
+}
+
+void StagingBuffer::copyTo(ImageResource* imageR, uint32_t width, uint32_t height)
+{
+    vk::BufferImageCopy region{};
+    region.setBufferOffset(0)
+        .setBufferRowLength(0)
+        .setBufferImageHeight(0)
+        .setImageOffset({0, 0, 0})
+        .setImageExtent({width, height, 1});
+    region.imageSubresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
+        .setMipLevel(0)
+        .setBaseArrayLayer(0)
+        .setLayerCount(1);
+
+    Graphics::disposableCommands([this, &imageR, &region](vk::CommandBuffer& cmdBuffer) {
+        cmdBuffer.copyBufferToImage(
+            this->buffer, imageR->image, vk::ImageLayout::eTransferDstOptimal, region);
+    });
+}
+
+void StagingBuffer::createBuffer(const std::span<std::byte>& inData)
+{
+    vk::BufferCreateInfo bufferInfo{};
+    bufferInfo.setSize(inData.size())
+        .setUsage(vk::BufferUsageFlagBits::eTransferSrc)
+        .setSharingMode(vk::SharingMode::eExclusive);
+    depackReturnValue(buffer, device.createBuffer(bufferInfo));
+
+    auto memReq = device.getBufferMemoryRequirements(buffer);
+
+    vk::MemoryAllocateInfo allocInfo{};
+    allocInfo.setAllocationSize(memReq.size)
+        .setMemoryTypeIndex(findMemoryType(phyDevice.getMemoryProperties(),
+                                           memReq.memoryTypeBits,
+                                           vk::MemoryPropertyFlagBits::eHostVisible |
+                                               vk::MemoryPropertyFlagBits::eHostCoherent));
+    depackReturnValue(memory, device.allocateMemory(allocInfo));
+    handleVkResult(device.bindBufferMemory(buffer, memory, 0));
+
+    depackReturnValue(data, device.mapMemory(memory, 0, inData.size()));
+    std::memcpy(data, inData.data(), static_cast<size_t>(inData.size()));
+    device.unmapMemory(memory);
+}
+
+} // namespace TBE::Graphics
