@@ -5,7 +5,6 @@
 
 #include <span>
 #include <tuple>
-#include <functional>
 
 namespace TBE::Graphics
 {

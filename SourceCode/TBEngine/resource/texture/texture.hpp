@@ -6,6 +6,20 @@
 
 #include <filesystem>
 
+
+namespace TBE::Resource
+{
+struct __TextureTransitionImageLayoutArgs
+{
+    vk::Image       image{};
+    vk::Format      format{};
+    vk::ImageLayout oldLayout{};
+    vk::ImageLayout newLayout{};
+    uint32_t        mipLevels{};
+};
+
+} // namespace TBE::Resource
+
 namespace TBE::Resource
 {
 
@@ -40,11 +54,7 @@ private:
 
 private:
     // TODO: use struct to pass args
-    void transitionImageLayout(vk::Image       image,
-                               vk::Format      format,
-                               vk::ImageLayout oldLayout,
-                               vk::ImageLayout newLayout,
-                               uint32_t        mipLevels_);
+    void transitionImageLayout(__TextureTransitionImageLayoutArgs args);
     void generateMipmaps();
 };
 

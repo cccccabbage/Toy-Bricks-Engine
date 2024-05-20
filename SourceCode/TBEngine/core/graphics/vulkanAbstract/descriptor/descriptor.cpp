@@ -47,7 +47,6 @@ void Descriptor::initSets(const std::span<BufferResourceUniform> uniBuffers,
     std::vector<vk::DescriptorSetLayout> layouts(numSets, layout);
     vk::DescriptorSetAllocateInfo        allocInfo{pool, layouts};
 
-    sets.resize(numSets); // TODO: remove
     depackReturnValue(sets, device.allocateDescriptorSets(allocInfo));
     for (size_t i = 0; i < numSets; i++)
     {

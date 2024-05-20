@@ -6,7 +6,6 @@
 
 #include <vector>
 #include <string>
-#include <tuple>
 
 namespace TBE::Resource
 {
@@ -33,7 +32,7 @@ public:
     void addShader(std::string filePath, ShaderType type);
 
     // this would init descriptor set layout
-    [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo> doneShaderAdding();
+    [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo> initDescriptorSetLayout();
 
 public:
     std::vector<vk::ShaderModule>                  modules{};

@@ -9,18 +9,21 @@
 #include <utility>
 
 
-namespace TBE::Window {
+namespace TBE::Window
+{
 
 std::vector<const char*> getRequiredExtensions();
 
-struct BufferSize {
+struct BufferSize
+{
     uint32_t width  = 0;
     uint32_t height = 0;
 
     operator std::pair<uint32_t, uint32_t>() { return std::move(std::make_pair(width, height)); }
 };
 
-class Window {
+class Window
+{
 public:
     Window(BufferSize size);
     ~Window();
@@ -47,9 +50,10 @@ private:
 
 public:
     HWND       getWin32Window() const { return glfwGetWin32Window(pWindow); }
-    auto       getModuleHandle() const { return GetModuleHandle(nullptr); }
+    const auto getModuleHandle() const { return GetModuleHandle(nullptr); }
     auto       getPWindow() { return pWindow; }
-    BufferSize getFramebufferSize() const {
+    BufferSize getFramebufferSize() const
+    {
         int width, height;
         glfwGetFramebufferSize(pWindow, &width, &height);
         BufferSize ret = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
@@ -59,7 +63,8 @@ public:
 
 
 private:
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
+    {
         auto owner                   = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
         *(owner->framebufferResized) = true;
         owner->winSize               = owner->getFramebufferSize();

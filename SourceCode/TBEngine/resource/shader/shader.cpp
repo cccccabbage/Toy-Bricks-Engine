@@ -88,7 +88,7 @@ vk::ShaderModule Shader::createShaderModule(const std::vector<char>& code)
     return std::move(shaderModule);
 }
 
-const std::vector<vk::PipelineShaderStageCreateInfo> Shader::doneShaderAdding()
+const std::vector<vk::PipelineShaderStageCreateInfo> Shader::initDescriptorSetLayout()
 {
     if (stageInfos.empty() || bindings.empty())
     {

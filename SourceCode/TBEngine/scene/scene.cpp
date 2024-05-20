@@ -12,12 +12,29 @@ void Scene::destroy()
     std::for_each(uniformBufferRs.begin(),
                   uniformBufferRs.end(),
                   [](Graphics::BufferResourceUniform& buffer) { buffer.destroy(); });
+
+    shader.destroy();
 }
 
-void Scene::tick()
+void Scene::tickCPU()
 {
     updateUniformBuffer();
-    currentImage = (currentImage + 1) % MAX_FRAMES_IN_FLIGHT;
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void Scene::tickGPU(const vk::CommandBuffer& cmdBuffer, const vk::PipelineLayout& layout)
+{
+    // model
+    std::array                                       vertexBuffers = {getVertBuffer(0)};
+    std::array<vk::DeviceSize, vertexBuffers.size()> offsets       = {0};
+    cmdBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
+    cmdBuffer.bindIndexBuffer(getIdxBuffer(0), 0, vk::IndexType::eUint32);
+    cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                                 layout,
+                                 0,
+                                 shader.descriptors.sets[currentFrame],
+                                 static_cast<uint32_t>(0));
+    cmdBuffer.drawIndexed(static_cast<uint32_t>(getIdxSize(0)), 1, 0, 0, 0);
 }
 
 void Scene::updateUniformBuffer()
@@ -39,7 +56,7 @@ void Scene::updateUniformBuffer()
     ubo.proj[1][1] *= -1; // important: Vulkan has a different coordinates from OpenGL
 
     std::span<std::byte> data(reinterpret_cast<std::byte*>(&ubo), sizeof(ubo));
-    uniformBufferRs[currentImage].update(data);
+    uniformBufferRs[currentFrame].update(data);
 }
 
 void Scene::read()

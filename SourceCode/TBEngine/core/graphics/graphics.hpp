@@ -2,12 +2,13 @@
 
 #include "TBEngine/utils/macros/includeVulkan.hpp"
 
-#include "TBEngine/resource/shader/shader.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/imageResource/imageResource.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/swapchainResource/swapchainResource.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/renderPass/renderPass.hpp"
 #include "TBEngine/scene/scene.hpp"
 
+#include <imgui.h>
+#include <imgui_impl_vulkan.h>
 #include <functional>
 
 namespace TBE::Window
@@ -43,11 +44,10 @@ private:
     void initVulkan();
     void cleanup();
 
-private:
-    void initIMGui();
-
 public:
-    bool* getPFrameBufferResized();
+    bool*                     getPFrameBufferResized();
+    void                      bindTickCmdFunc(std::function<void(const vk::CommandBuffer&)> func);
+    ImGui_ImplVulkan_InitInfo getImguiInfo();
 
 private:
     void createInstance();
@@ -73,7 +73,6 @@ private:
     void recreateSwapChain();
 
 private:
-    vk::Instance                   instance{};
     vk::Queue                      presentQueue{};
     SwapchainResource              swapchainR{};
     RenderPass                     renderPass{};
@@ -90,9 +89,8 @@ private:
     vk::SampleCountFlagBits        msaaSamples = vk::SampleCountFlagBits::e1;
     vk::DebugUtilsMessengerEXT     debugMessenger{};
 
-    Resource::Shader shader{};
-
-    vk::DescriptorPool imguiDescPool{};
+private:
+    std::vector<std::function<void(const vk::CommandBuffer&)>> tickCmdFuncs{};
 
 private:
     Scene::Scene scene{};
@@ -109,6 +107,7 @@ private:
     bool     framebufferResized = false;
 
 public:
+    static vk::Instance       instance;
     static vk::PhysicalDevice phyDevice;
     static vk::Device         device;
     static vk::SurfaceKHR     surface;

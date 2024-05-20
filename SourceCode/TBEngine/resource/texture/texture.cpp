@@ -58,11 +58,11 @@ void Texture::read()
     imageR.setWH(texWidth, texHeight);
     imageR.init(ImageResourceType::eTexture);
 
-    transitionImageLayout(imageR.image,
-                          vk::Format::eR8G8B8A8Srgb,
-                          vk::ImageLayout::eUndefined,
-                          vk::ImageLayout::eTransferDstOptimal,
-                          mipLevels);
+    transitionImageLayout({.image     = imageR.image,
+                           .format    = vk::Format::eR8G8B8A8Srgb,
+                           .oldLayout = vk::ImageLayout::eUndefined,
+                           .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                           .mipLevels = mipLevels});
     stagingBuffer.copyTo(
         &imageR, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
@@ -88,17 +88,12 @@ void Texture::read()
     samplerInited = true;
 }
 
-void Texture::transitionImageLayout(vk::Image       image,
-                                    vk::Format      format,
-                                    vk::ImageLayout oldLayout,
-                                    vk::ImageLayout newLayout,
-                                    uint32_t        mipLevels_)
+void Texture::transitionImageLayout(__TextureTransitionImageLayoutArgs args)
 {
+    auto& [image, format, oldLayout, newLayout, miplevels] = args;
     vk::ImageSubresourceRange subresourceRange{};
-    subresourceRange.setBaseMipLevel(0)
-        .setLevelCount(mipLevels_)
-        .setBaseArrayLayer(0)
-        .setLayerCount(1);
+    subresourceRange.setBaseMipLevel(0).setLevelCount(mipLevels).setBaseArrayLayer(0).setLayerCount(
+        1);
 
     vk::ImageMemoryBarrier barrier{};
     barrier.setOldLayout(oldLayout)

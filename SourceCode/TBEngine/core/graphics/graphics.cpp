@@ -3,7 +3,6 @@
 #include "TBEngine/utils/log/log.hpp"
 #include "TBEngine/core/graphics/detail/graphicsDetail.hpp"
 #include "TBEngine/core/window/window.hpp"
-#include "TBEngine/core/math/dataFormat.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -28,6 +27,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(VkInstance           
 namespace TBE::Graphics // VulkanGraphics
 {
 using namespace TBE::Graphics::Detail;
+vk::Instance       VulkanGraphics::instance      = {};
 vk::PhysicalDevice VulkanGraphics::phyDevice     = {};
 vk::Device         VulkanGraphics::device        = {};
 vk::SurfaceKHR     VulkanGraphics::surface       = {};
@@ -40,8 +40,13 @@ VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_)
 {
     logger->trace("Initializing graphic.");
     initVulkan();
+
+    auto sceneTickFunc = [this](const vk::CommandBuffer& cmdBuffer) {
+        scene.tickGPU(cmdBuffer, pipelineLayout);
+    };
+    bindTickCmdFunc(sceneTickFunc);
+
     logger->trace("Graphic initialized.");
-    initIMGui();
 }
 
 VulkanGraphics::~VulkanGraphics()
@@ -77,44 +82,8 @@ void VulkanGraphics::initVulkan()
     createSyncObjects();
 }
 
-void VulkanGraphics::initIMGui()
-{
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    (void)io;
-    ImGui_ImplGlfw_InitForVulkan(window.getPWindow(), true);
-
-    // init imgui descriptor pool
-    vk::DescriptorPoolSize poolSize{};
-    poolSize.setType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(1);
-    vk::DescriptorPoolCreateInfo poolInfo{};
-    poolInfo.setPoolSizes(poolSize).setMaxSets(1);
-    depackReturnValue(imguiDescPool, device.createDescriptorPool(poolInfo));
-
-    ImGui_ImplVulkan_InitInfo info{};
-    info.Queue           = graphicsQueue;
-    info.Device          = device;
-    info.PhysicalDevice  = phyDevice;
-    info.Subpass         = 0;
-    info.Instance        = instance;
-    info.Allocator       = nullptr;
-    info.ImageCount      = MAX_FRAMES_IN_FLIGHT;
-    info.RenderPass      = renderPass.renderPass;
-    info.MSAASamples     = (VkSampleCountFlagBits)msaaSamples;
-    info.QueueFamily     = QueueFamilyIndices(phyDevice, surface).graphicsFamily.value();
-    info.MinImageCount   = MAX_FRAMES_IN_FLIGHT;
-    info.DescriptorPool  = imguiDescPool;
-    info.CheckVkResultFn = [](VkResult res) { assert(res == VK_SUCCESS); };
-
-    ImGui_ImplVulkan_Init(&info);
-}
-
 void VulkanGraphics::tick()
 {
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
     vk::Fence&         fence           = inFlightFences[currentFrame];
     vk::Semaphore&     imgAviSemaphore = imageAvailableSemaphores[currentFrame];
     vk::Semaphore&     renFinSemaphore = renderFinishedSemaphores[currentFrame];
@@ -138,7 +107,7 @@ void VulkanGraphics::tick()
         logErrorMsg("failed to acquire swap chain image!");
     }
 
-    scene.tick();
+    scene.tickCPU();
 
     device.resetFences(fence);
 
@@ -194,9 +163,6 @@ void VulkanGraphics::cleanup()
 
     scene.destroy();
 
-    shader.destroy();
-    device.destroy(imguiDescPool);
-
     device.destroy(graphicsPipeline);
     device.destroy(pipelineLayout);
     renderPass.destroy();
@@ -219,6 +185,28 @@ void VulkanGraphics::cleanup()
 bool* VulkanGraphics::getPFrameBufferResized()
 {
     return &framebufferResized;
+}
+
+void VulkanGraphics::bindTickCmdFunc(std::function<void(const vk::CommandBuffer&)> func)
+{
+    tickCmdFuncs.emplace_back(func);
+}
+
+ImGui_ImplVulkan_InitInfo VulkanGraphics::getImguiInfo()
+{
+    ImGui_ImplVulkan_InitInfo info{};
+    info.Queue          = graphicsQueue;
+    info.Device         = device;
+    info.PhysicalDevice = phyDevice;
+    info.Subpass        = 0;
+    info.Instance       = instance;
+    info.Allocator      = nullptr;
+    info.ImageCount     = MAX_FRAMES_IN_FLIGHT;
+    info.RenderPass     = renderPass.renderPass;
+    info.MSAASamples    = (VkSampleCountFlagBits)msaaSamples;
+    info.QueueFamily    = QueueFamilyIndices(phyDevice, surface).graphicsFamily.value();
+    info.MinImageCount  = MAX_FRAMES_IN_FLIGHT;
+    return info;
 }
 
 void VulkanGraphics::createInstance()
@@ -342,9 +330,9 @@ void VulkanGraphics::createRenderPass()
 
 void VulkanGraphics::createGraphicsPipeline()
 {
-    shader.addShader("Shaders/vert.spv", Resource::ShaderType::eVertex);
-    shader.addShader("Shaders/frag.spv", Resource::ShaderType::eFrag);
-    auto shaderStages = shader.doneShaderAdding(); // descriptor set layout inited here
+    scene.addShader("Shaders/vert.spv", Resource::ShaderType::eVertex);
+    scene.addShader("Shaders/frag.spv", Resource::ShaderType::eFrag);
+    auto shaderStages = scene.initDescriptorSetLayout();
 
     std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport,
                                                    vk::DynamicState::eScissor};
@@ -419,7 +407,7 @@ void VulkanGraphics::createGraphicsPipeline()
 
     // define the uniform data that would be passed to shader
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.setSetLayouts(shader.descriptors.layout);
+    pipelineLayoutInfo.setSetLayouts(scene.getDescriptorSetLayout());
 
     depackReturnValue(pipelineLayout, device.createPipelineLayout(pipelineLayoutInfo));
 
@@ -441,7 +429,7 @@ void VulkanGraphics::createGraphicsPipeline()
     depackReturnValue(grapPipes, device.createGraphicsPipelines(nullptr, pipelineInfo));
     graphicsPipeline = std::move(grapPipes[0]);
 
-    shader.destroyCache(); // shaderModules, createInfos and descriptor set layout bindings
+    scene.destroyShaderCache();
 }
 
 void VulkanGraphics::createFramebuffers()
@@ -505,9 +493,8 @@ void VulkanGraphics::createDescriptor()
         .setType(vk::DescriptorType::eCombinedImageSampler)
         .setDescriptorCount(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT));
 
-    shader.descriptors.initPool(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT), poolSizes);
-
-    shader.descriptors.initSets(
+    scene.initDescriptorPool(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT), poolSizes);
+    scene.initDescriptorSets(
         scene.getUniformBufferRs(), scene.getTextureSampler(0), scene.getTextureImageView(0));
 }
 
@@ -630,26 +617,10 @@ void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer cmdBuffer, uint32_t i
     scissor.setOffset({0, 0}).setExtent(extent);
     cmdBuffer.setScissor(0, scissor);
 
-    // std::array                                       vertexBuffers = {model.getVertBuffer()};
-    std::array                                       vertexBuffers = {scene.getVertBuffer(0)};
-    std::array<vk::DeviceSize, vertexBuffers.size()> offsets       = {0};
-    cmdBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
-    // cmdBuffer.bindIndexBuffer(model.getIdxBuffer(), 0, vk::IndexType::eUint32);
-    cmdBuffer.bindIndexBuffer(scene.getIdxBuffer(0), 0, vk::IndexType::eUint32);
-
-    cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                                 pipelineLayout,
-                                 0,
-                                 shader.descriptors.sets[currentFrame],
-                                 static_cast<uint32_t>(0));
-
-    // cmdBuffer.drawIndexed(static_cast<uint32_t>(model.getIdxSize()), 1, 0, 0, 0);
-    cmdBuffer.drawIndexed(static_cast<uint32_t>(scene.getIdxSize(0)), 1, 0, 0, 0);
-
-    ImGui::ShowDemoWindow();
-    ImGui::Render();
-    ImDrawData* drawData = ImGui::GetDrawData();
-    ImGui_ImplVulkan_RenderDrawData(drawData, cmdBuffer);
+    for (auto& func : tickCmdFuncs)
+    {
+        func(cmdBuffer);
+    }
 
     cmdBuffer.endRenderPass();
     handleVkResult(cmdBuffer.end());
