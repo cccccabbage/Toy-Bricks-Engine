@@ -6,19 +6,14 @@
 #include <imgui_impl_glfw.h>
 
 
-namespace TBE::Ui
-{
+namespace TBE::Editor::Ui {
 using Graphics::VulkanGraphics;
 
-inline void checkResult(VkResult res)
-{
+inline void checkResult(VkResult res) {
     handleVkResult((vk::Result)res);
 }
 
-void Ui::init(std::tuple<ImGui_ImplVulkan_InitInfo, GLFWwindow*> Info)
-{
-    auto [info, pWindow] = Info;
-
+Ui::Ui(ImGui_ImplVulkan_InitInfo imguiInfo, GLFWwindow *pWindow) {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
@@ -30,19 +25,17 @@ void Ui::init(std::tuple<ImGui_ImplVulkan_InitInfo, GLFWwindow*> Info)
     poolInfo.setPoolSizes(poolSize).setMaxSets(1);
     depackReturnValue(descPool, VulkanGraphics::device.createDescriptorPool(poolInfo));
 
-    info.DescriptorPool  = descPool;
-    info.CheckVkResultFn = checkResult;
+    imguiInfo.DescriptorPool  = descPool;
+    imguiInfo.CheckVkResultFn = checkResult;
 
-    ImGui_ImplVulkan_Init(&info);
+    ImGui_ImplVulkan_Init(&imguiInfo);
 }
 
-void Ui::destroy()
-{
+Ui::~Ui() {
     VulkanGraphics::device.destroy(descPool);
 }
 
-void Ui::tick(const vk::CommandBuffer& cmdBuffer)
-{
+void Ui::tickGPU(const vk::CommandBuffer& cmdBuffer) {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();

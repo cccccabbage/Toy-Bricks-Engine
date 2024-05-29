@@ -12,9 +12,13 @@ extern const TBE::Utils::Log::Logger* logger;
 
 namespace TBE::Window {
 
-Window::Window(BufferSize size) : winSize(size) { init(); }
+Window::Window(BufferSize size) : winSize(size) {
+    init();
+}
 
-Window::~Window() { exit(); }
+Window::~Window() {
+    exit();
+}
 
 std::vector<const char*> getRequiredExtensions() {
     uint32_t     glfwExtensionCount = 0;
@@ -39,14 +43,18 @@ void Window::init() {
     logger->trace("Window initialized.");
 }
 
-void Window::tick() { glfwPollEvents(); }
+void Window::tick() {
+    glfwPollEvents();
+}
 
 void Window::exit() {
     glfwDestroyWindow(pWindow);
     glfwTerminate();
 }
 
-bool Window::shouldClose() { return glfwWindowShouldClose(pWindow); }
+bool Window::shouldClose() {
+    return glfwWindowShouldClose(pWindow);
+}
 
 
 } // namespace TBE::Window

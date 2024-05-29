@@ -55,7 +55,7 @@ void Scene::updateUniformBuffer()
         glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.1f, 10.0f);
     ubo.proj[1][1] *= -1; // important: Vulkan has a different coordinates from OpenGL
 
-    std::span<std::byte> data(reinterpret_cast<std::byte*>(&ubo), sizeof(ubo));
+    std::span<std::byte> data(static_cast<std::byte*>(static_cast<void*>(&ubo)), sizeof(ubo));
     uniformBufferRs[currentFrame].update(data);
 }
 

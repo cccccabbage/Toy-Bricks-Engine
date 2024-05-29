@@ -7,17 +7,16 @@
 #include <imgui_impl_vulkan.h>
 #include <imgui_impl_glfw.h>
 
-namespace TBE::Ui
+namespace TBE::Editor::Ui
 {
 
-class Ui
-{
+class Ui {
 public:
-    void init(std::tuple<ImGui_ImplVulkan_InitInfo, GLFWwindow*> info);
-    void destroy();
+    Ui(ImGui_ImplVulkan_InitInfo imguiInfo, GLFWwindow *pWindow);
+    ~Ui();
 
 public:
-    void tick(const vk::CommandBuffer& cmdBuffer);
+    void tickGPU(const vk::CommandBuffer& cmdBuffer);
 
 private:
     vk::DescriptorPool descPool{};

@@ -4,10 +4,6 @@
 #include "TBEngine/core/graphics/detail/graphicsDetail.hpp"
 #include "TBEngine/core/window/window.hpp"
 
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_vulkan.h>
-
 #include <utility>
 
 
@@ -41,9 +37,8 @@ VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_)
     logger->trace("Initializing graphic.");
     initVulkan();
 
-    auto sceneTickFunc = [this](const vk::CommandBuffer& cmdBuffer) {
-        scene.tickGPU(cmdBuffer, pipelineLayout);
-    };
+    auto sceneTickFunc =
+        std::bind(&Scene::Scene::tickGPU, &scene, std::placeholders::_1, pipelineLayout);
     bindTickCmdFunc(sceneTickFunc);
 
     logger->trace("Graphic initialized.");

@@ -28,12 +28,12 @@ public:
     const decltype(indices)&   getIndices() { return indices; };
     const std::span<std::byte> getVerticesByte()
     {
-        return std::span<std::byte>(reinterpret_cast<std::byte*>(vertices.data()),
+        return std::span<std::byte>(static_cast<std::byte*>(static_cast<void*>(vertices.data())),
                                     vertices.size() * sizeof(vertices[0]));
     }
     const std::span<std::byte> getIndicesByte()
     {
-        return std::span<std::byte>(reinterpret_cast<std::byte*>(indices.data()),
+        return std::span<std::byte>(static_cast<std::byte*>(static_cast<void*>(indices.data())),
                                     indices.size() * sizeof(indices[0]));
     }
 

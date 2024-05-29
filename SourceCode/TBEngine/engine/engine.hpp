@@ -2,7 +2,7 @@
 
 #include "TBEngine/core/graphics/graphics.hpp"
 #include "TBEngine/core/window/window.hpp"
-#include "TBEngine/ui/ui.hpp"
+#include "TBEngine/editor/editor.hpp"
 
 namespace TBE::Engine
 {
@@ -22,9 +22,23 @@ private:
     void exit();
 
 private:
+    void captureKeyInput(TBE::Editor::DelegateManager::KeyType keyType) {
+        switch(keyType) {
+            case TBE::Editor::DelegateManager::KeyType::eEscape :
+                shouldClose = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+private:
     Window::Window           winForm;
     Graphics::VulkanGraphics graphic;
-    Ui::Ui                   ui;
+    Editor::Editor           editor;
+
+private:
+    bool shouldClose = false;
 };
 
 } // namespace TBE::Engine

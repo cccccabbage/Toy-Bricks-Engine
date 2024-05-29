@@ -53,7 +53,6 @@ private:
     const vk::PhysicalDevice& phyDevice;
 
 private:
-    // TODO: use struct to pass args
     void transitionImageLayout(__TextureTransitionImageLayoutArgs args);
     void generateMipmaps();
 };

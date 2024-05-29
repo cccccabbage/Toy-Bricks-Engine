@@ -50,7 +50,7 @@ void Texture::read()
     vk::DeviceSize imageSize = texHeight * texWidth * 4;
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
-    std::span<std::byte> data(reinterpret_cast<std::byte*>(pixels), imageSize);
+    std::span<std::byte> data(static_cast<std::byte*>(static_cast<void*>(pixels)), imageSize);
     StagingBuffer        stagingBuffer{data};
     file.free();
 
