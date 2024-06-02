@@ -3,6 +3,7 @@
 #include "TBEngine/utils/log/log.hpp"
 #include "TBEngine/core/graphics/detail/graphicsDetail.hpp"
 #include "TBEngine/core/window/window.hpp"
+#include "TBEngine/settings.hpp"
 
 #include <utility>
 
@@ -20,8 +21,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(VkInstance           
                                                            VkDebugUtilsMessengerEXT     messenger,
                                                            VkAllocationCallbacks const* pAllocator);
 
-namespace TBE::Graphics // VulkanGraphics
-{
+namespace TBE::Graphics { // VulkanGraphics
 using namespace TBE::Graphics::Detail;
 vk::Instance       VulkanGraphics::instance      = {};
 vk::PhysicalDevice VulkanGraphics::phyDevice     = {};
@@ -29,11 +29,10 @@ vk::Device         VulkanGraphics::device        = {};
 vk::SurfaceKHR     VulkanGraphics::surface       = {};
 vk::CommandPool    VulkanGraphics::commandPool   = {};
 vk::Queue          VulkanGraphics::graphicsQueue = {};
-vk::Extent2D       VulkanGraphics::extent        = {};
+vk::Extent2D       VulkanGraphics::extent        = {{WINDOW_WIDTH, WINDOW_HEIGHT}};
 
 
-VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_)
-{
+VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_) {
     logger->trace("Initializing graphic.");
     initVulkan();
 
@@ -44,13 +43,11 @@ VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_)
     logger->trace("Graphic initialized.");
 }
 
-VulkanGraphics::~VulkanGraphics()
-{
+VulkanGraphics::~VulkanGraphics() {
     cleanup();
 }
 
-void VulkanGraphics::initVulkan()
-{
+void VulkanGraphics::initVulkan() {
     createInstance();
     createSurface();
 
@@ -77,28 +74,23 @@ void VulkanGraphics::initVulkan()
     createSyncObjects();
 }
 
-void VulkanGraphics::tick()
-{
+void VulkanGraphics::tick() {
     vk::Fence&         fence           = inFlightFences[currentFrame];
     vk::Semaphore&     imgAviSemaphore = imageAvailableSemaphores[currentFrame];
     vk::Semaphore&     renFinSemaphore = renderFinishedSemaphores[currentFrame];
     vk::CommandBuffer& cmdBuffer       = commandBuffers[currentFrame];
 
     while (device.waitForFences(fence, vk::True, std::numeric_limits<uint64_t>::max()) ==
-           vk::Result::eTimeout)
-    {
+           vk::Result::eTimeout) {
         logger->warn("wait for fences: timeout.");
     }
 
     auto [result, imageIndex] = device.acquireNextImageKHR(
         swapchainR.swapchain, std::numeric_limits<uint64_t>::max(), imgAviSemaphore, nullptr);
-    if (result == vk::Result::eErrorOutOfDateKHR)
-    {
+    if (result == vk::Result::eErrorOutOfDateKHR) {
         recreateSwapChain();
         return;
-    }
-    else if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR)
-    {
+    } else if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
         logErrorMsg("failed to acquire swap chain image!");
     }
 
@@ -116,41 +108,39 @@ void VulkanGraphics::tick()
     vk::SubmitInfo         submitInfo{};
 
     submitInfo.setWaitSemaphores(waitSemaphores)
-        .setPWaitDstStageMask(waitStages)
-        .setCommandBuffers(cmdBuffer)
-        .setSignalSemaphores(signalSemaphores);
+              .setPWaitDstStageMask(waitStages)
+              .setCommandBuffers(cmdBuffer)
+              .setSignalSemaphores(signalSemaphores);
 
     handleVkResult(graphicsQueue.submit(submitInfo, fence));
 
     vk::SubpassDependency dependency{};
     dependency.setSrcSubpass(vk::SubpassExternal)
-        .setDstSubpass(0)
-        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setSrcAccessMask(vk::AccessFlagBits::eNone)
-        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+              .setDstSubpass(0)
+              .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+              .setSrcAccessMask(vk::AccessFlagBits::eNone)
+              .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+              .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
 
     vk::PresentInfoKHR presentInfo{};
     presentInfo.setWaitSemaphores(signalSemaphores)
-        .setSwapchains(swapchainR.swapchain)
-        .setPImageIndices(&imageIndex);
+               .setSwapchains(swapchainR.swapchain)
+               .setPImageIndices(&imageIndex);
 
     result = presentQueue.presentKHR(presentInfo);
     if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
-        framebufferResized)
-    {
+        framebufferResized) {
         framebufferResized = false;
         recreateSwapChain();
+    } else if (result != vk::Result::eSuccess) {
+        logErrorMsg("failed to present!");
     }
-    else if (result != vk::Result::eSuccess) { logErrorMsg("failed to present!"); }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void VulkanGraphics::cleanup()
-{
-    while (device.waitIdle() == vk::Result::eTimeout)
-    {
+void VulkanGraphics::cleanup() {
+    while (device.waitIdle() == vk::Result::eTimeout) {
         logger->warn("device waitIdle in cleanup(): timeout.");
     }
 
@@ -162,8 +152,7 @@ void VulkanGraphics::cleanup()
     device.destroy(pipelineLayout);
     renderPass.destroy();
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         device.destroy(imageAvailableSemaphores[i]);
         device.destroy(renderFinishedSemaphores[i]);
         device.destroy(inFlightFences[i]);
@@ -177,18 +166,15 @@ void VulkanGraphics::cleanup()
     instance.destroy();
 }
 
-bool* VulkanGraphics::getPFrameBufferResized()
-{
+bool* VulkanGraphics::getPFrameBufferResized() {
     return &framebufferResized;
 }
 
-void VulkanGraphics::bindTickCmdFunc(std::function<void(const vk::CommandBuffer&)> func)
-{
+void VulkanGraphics::bindTickCmdFunc(std::function<void(const vk::CommandBuffer&)> func) {
     tickCmdFuncs.emplace_back(func);
 }
 
-ImGui_ImplVulkan_InitInfo VulkanGraphics::getImguiInfo()
-{
+ImGui_ImplVulkan_InitInfo VulkanGraphics::getImguiInfo() {
     ImGui_ImplVulkan_InitInfo info{};
     info.Queue          = graphicsQueue;
     info.Device         = device;
@@ -204,24 +190,23 @@ ImGui_ImplVulkan_InitInfo VulkanGraphics::getImguiInfo()
     return info;
 }
 
-void VulkanGraphics::createInstance()
-{
-    if (inDebug && !checkValidationLayerSupport(validationLayers))
-    {
+void VulkanGraphics::createInstance() {
+    if (inDebug && !checkValidationLayerSupport(validationLayers)) {
         logErrorMsg("Validation layers requested, but not available.");
     };
     vk::ApplicationInfo appInfo{};
     appInfo.setPApplicationName("Toy Bricks Engine")
-        .setApplicationVersion(1)
-        .setPEngineName("No Engine")
-        .setEngineVersion(1)
-        .setApiVersion(VK_API_VERSION_1_0);
+           .setApplicationVersion(1)
+           .setPEngineName("No Engine")
+           .setEngineVersion(1)
+           .setApiVersion(VK_API_VERSION_1_0);
 
     auto extensions = getRequiredExtensions();
 
     vk::InstanceCreateInfo createInfo{};
-    createInfo.setPApplicationInfo(&appInfo).setEnabledLayerCount(0).setPEnabledExtensionNames(
-        extensions);
+    createInfo.setPApplicationInfo(&appInfo)
+              .setEnabledLayerCount(0)
+              .setPEnabledExtensionNames(extensions);
 
     auto dbgCreateInfo = genDebugCreateInfo();
     if (inDebug) { createInfo.setPEnabledLayerNames(validationLayers).setPNext(&dbgCreateInfo); }
@@ -229,16 +214,13 @@ void VulkanGraphics::createInstance()
     depackReturnValue(instance, vk::createInstance(createInfo));
 }
 
-void VulkanGraphics::createSurface()
-{
-    auto createInfo = vk::Win32SurfaceCreateInfoKHR()
-                          .setHwnd(window.getWin32Window())
-                          .setHinstance(window.getModuleHandle());
+void VulkanGraphics::createSurface() {
+    auto createInfo = vk::Win32SurfaceCreateInfoKHR().setHwnd(window.getWin32Window())
+                                                     .setHinstance(window.getModuleHandle());
     depackReturnValue(surface, instance.createWin32SurfaceKHR(createInfo));
 }
 
-void VulkanGraphics::setupDebugMessenger()
-{
+void VulkanGraphics::setupDebugMessenger() {
     if (!inDebug) return;
 
     auto createInfo = genDebugCreateInfo();
@@ -247,8 +229,7 @@ void VulkanGraphics::setupDebugMessenger()
         instance.getProcAddr("vkCreateDebugUtilsMessengerEXT"));
     pfnVkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
         instance.getProcAddr("vkDestroyDebugUtilsMessengerEXT"));
-    if (!pfnVkCreateDebugUtilsMessengerEXT || !pfnVkDestroyDebugUtilsMessengerEXT)
-    {
+    if (!pfnVkCreateDebugUtilsMessengerEXT || !pfnVkDestroyDebugUtilsMessengerEXT) {
         logErrorMsg("GetInstanceProcAddr: Unable to find pfnCreateDebugUtilsMessengerEXT or "
                     "pfnVkDestroyDebugUtilsMessengerEXT function.");
     }
@@ -256,16 +237,13 @@ void VulkanGraphics::setupDebugMessenger()
     depackReturnValue(debugMessenger, instance.createDebugUtilsMessengerEXT(createInfo));
 }
 
-void VulkanGraphics::pickPhysicalDevice()
-{
+void VulkanGraphics::pickPhysicalDevice() {
     std::vector<vk::PhysicalDevice> devices{};
     depackReturnValue(devices, instance.enumeratePhysicalDevices());
     if (devices.size() == 0) { logErrorMsg("Failed to find GPUs with Vulkan support."); }
 
-    for (const auto& phyDeivce_ : devices)
-    {
-        if (isDeviceSuitable(phyDeivce_))
-        {
+    for (const auto& phyDeivce_ : devices) {
+        if (isDeviceSuitable(phyDeivce_)) {
             phyDevice   = phyDeivce_;
             msaaSamples = getMaxUsableSampleCount(phyDevice);
             break;
@@ -275,27 +253,24 @@ void VulkanGraphics::pickPhysicalDevice()
     if (!phyDevice) { logErrorMsg("Failed to find suitable GPU."); }
 }
 
-void VulkanGraphics::createExtent()
-{
+void VulkanGraphics::createExtent() {
     vk::SurfaceCapabilitiesKHR capabilities{};
     depackReturnValue(capabilities, phyDevice.getSurfaceCapabilitiesKHR(surface));
     extent = chooseSwapExtent(capabilities, window.getFramebufferSize());
 }
 
-void VulkanGraphics::createLogicalDevice()
-{
+void VulkanGraphics::createLogicalDevice() {
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos{};
 
     QueueFamilyIndices indices             = QueueFamilyIndices(phyDevice, surface);
     std::set<uint32_t> uniqueQueueFamilies = indices;
 
     float queuePriority = 1.0f;
-    for (auto queueFamily : uniqueQueueFamilies)
-    {
+    for (auto queueFamily : uniqueQueueFamilies) {
         vk::DeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.setQueueFamilyIndex(queueFamily)
-            .setQueueCount(1)
-            .setPQueuePriorities(&queuePriority);
+                       .setQueueCount(1)
+                       .setPQueuePriorities(&queuePriority);
         queueCreateInfos.push_back(queueCreateInfo);
     }
     vk::PhysicalDeviceFeatures deviceFeatures{};
@@ -303,9 +278,9 @@ void VulkanGraphics::createLogicalDevice()
 
     vk::DeviceCreateInfo createInfo{};
     createInfo.setFlags(vk::DeviceCreateFlags())
-        .setQueueCreateInfos(queueCreateInfos)
-        .setPEnabledExtensionNames(deviceExtensions)
-        .setPEnabledFeatures(&deviceFeatures);
+              .setQueueCreateInfos(queueCreateInfos)
+              .setPEnabledExtensionNames(deviceExtensions)
+              .setPEnabledFeatures(&deviceFeatures);
 
     depackReturnValue(device, phyDevice.createDevice(createInfo));
 
@@ -313,18 +288,15 @@ void VulkanGraphics::createLogicalDevice()
     presentQueue  = device.getQueue(indices.presentFamily.value(), 0);
 }
 
-void VulkanGraphics::createSwapChain()
-{
+void VulkanGraphics::createSwapChain() {
     swapchainR.init(phyDevice, window.getFramebufferSize());
 }
 
-void VulkanGraphics::createRenderPass()
-{
+void VulkanGraphics::createRenderPass() {
     renderPass.init(swapchainR.format, findDepthFormat(), msaaSamples);
 }
 
-void VulkanGraphics::createGraphicsPipeline()
-{
+void VulkanGraphics::createGraphicsPipeline() {
     scene.addShader("Shaders/vert.spv", Resource::ShaderType::eVertex);
     scene.addShader("Shaders/frag.spv", Resource::ShaderType::eFrag);
     auto shaderStages = scene.initDescriptorSetLayout();
@@ -340,11 +312,11 @@ void VulkanGraphics::createGraphicsPipeline()
 
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.setVertexBindingDescriptions(bindingDescription)
-        .setVertexAttributeDescriptions(attributeDescriptions);
+                   .setVertexAttributeDescriptions(attributeDescriptions);
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList)
-        .setPrimitiveRestartEnable(vk::False);
+                 .setPrimitiveRestartEnable(vk::False);
 
     vk::Viewport viewport{
         0.0f,                 // x
@@ -366,17 +338,17 @@ void VulkanGraphics::createGraphicsPipeline()
 
     vk::PipelineRasterizationStateCreateInfo rasterizer{};
     rasterizer.setDepthClampEnable(vk::False)
-        .setRasterizerDiscardEnable(vk::False)
-        .setPolygonMode(vk::PolygonMode::eFill)
-        .setLineWidth(1.0f)
-        .setCullMode(vk::CullModeFlagBits::eBack)
-        .setFrontFace(vk::FrontFace::eCounterClockwise)
-        .setDepthBiasEnable(vk::False);
+              .setRasterizerDiscardEnable(vk::False)
+              .setPolygonMode(vk::PolygonMode::eFill)
+              .setLineWidth(1.0f)
+              .setCullMode(vk::CullModeFlagBits::eBack)
+              .setFrontFace(vk::FrontFace::eCounterClockwise)
+              .setDepthBiasEnable(vk::False);
 
     vk::PipelineMultisampleStateCreateInfo multisampling{};
     multisampling.setSampleShadingEnable(vk::True)
-        .setMinSampleShading(0.2f)
-        .setRasterizationSamples(msaaSamples);
+                 .setMinSampleShading(0.2f)
+                 .setRasterizationSamples(msaaSamples);
 
     vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
     colorBlendAttachment
@@ -395,10 +367,10 @@ void VulkanGraphics::createGraphicsPipeline()
 
     vk::PipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.setDepthTestEnable(vk::True)
-        .setDepthWriteEnable(vk::True)
-        .setDepthCompareOp(vk::CompareOp::eLess) // lower depth means closer
-        .setDepthBoundsTestEnable(vk::False)
-        .setStencilTestEnable(vk::False);
+                .setDepthWriteEnable(vk::True)
+                .setDepthCompareOp(vk::CompareOp::eLess) // lower depth means closer
+                .setDepthBoundsTestEnable(vk::False)
+                .setStencilTestEnable(vk::False);
 
     // define the uniform data that would be passed to shader
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -408,17 +380,17 @@ void VulkanGraphics::createGraphicsPipeline()
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.setStages(shaderStages)
-        .setPVertexInputState(&vertexInputInfo)
-        .setPInputAssemblyState(&inputAssembly)
-        .setPViewportState(&viewportState)
-        .setPRasterizationState(&rasterizer)
-        .setPMultisampleState(&multisampling)
-        .setPColorBlendState(&colorBlending)
-        .setPDynamicState(&dynamicState)
-        .setLayout(pipelineLayout)
-        .setRenderPass(renderPass.renderPass)
-        .setSubpass(0)
-        .setPDepthStencilState(&depthStencil);
+                .setPVertexInputState(&vertexInputInfo)
+                .setPInputAssemblyState(&inputAssembly)
+                .setPViewportState(&viewportState)
+                .setPRasterizationState(&rasterizer)
+                .setPMultisampleState(&multisampling)
+                .setPColorBlendState(&colorBlending)
+                .setPDynamicState(&dynamicState)
+                .setLayout(pipelineLayout)
+                .setRenderPass(renderPass.renderPass)
+                .setSubpass(0)
+                .setPDepthStencilState(&depthStencil);
 
     std::vector<vk::Pipeline> grapPipes{};
     depackReturnValue(grapPipes, device.createGraphicsPipelines(nullptr, pipelineInfo));
@@ -427,59 +399,53 @@ void VulkanGraphics::createGraphicsPipeline()
     scene.destroyShaderCache();
 }
 
-void VulkanGraphics::createFramebuffers()
-{
+void VulkanGraphics::createFramebuffers() {
     swapchainFramebuffers.resize(swapchainR.views.size());
 
-    for (size_t i = 0; i < swapchainR.views.size(); i++)
-    {
-        std::array attachments = {
-            colorImageR.imageView, depthImageR.imageView, swapchainR.views[i]};
+    for (size_t i = 0; i < swapchainR.views.size(); i++) {
+        std::array attachments = {colorImageR.imageView,
+                                  depthImageR.imageView,
+                                  swapchainR.views[i]};
         vk::FramebufferCreateInfo framebufferInfo{};
         framebufferInfo.setRenderPass(renderPass.renderPass)
-            .setAttachments(attachments)
-            .setWidth(extent.width)
-            .setHeight(extent.height)
-            .setLayers(1);
+                       .setAttachments(attachments)
+                       .setWidth(extent.width)
+                       .setHeight(extent.height)
+                       .setLayers(1);
 
         depackReturnValue(swapchainFramebuffers[i], device.createFramebuffer(framebufferInfo));
     }
 }
 
-void VulkanGraphics::createCommandPool()
-{
+void VulkanGraphics::createCommandPool() {
     auto indices = QueueFamilyIndices(phyDevice, surface);
 
     vk::CommandPoolCreateInfo poolInfo{};
     poolInfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-        .setQueueFamilyIndex(indices.graphicsFamily.value());
+            .setQueueFamilyIndex(indices.graphicsFamily.value());
 
     depackReturnValue(commandPool, device.createCommandPool(poolInfo));
 }
 
-void VulkanGraphics::createColorResources()
-{
+void VulkanGraphics::createColorResources() {
     colorImageR.setFormat(swapchainR.format);
     colorImageR.setWH(extent.width, extent.height);
     colorImageR.init(ImageResourceType::eColor);
 }
 
-void VulkanGraphics::createDepthResources()
-{
+void VulkanGraphics::createDepthResources() {
     depthImageR.setFormat(findDepthFormat());
     depthImageR.setWH(extent.width, extent.height);
     depthImageR.init(ImageResourceType::eDepth);
 }
 
-void VulkanGraphics::loadModel()
-{
+void VulkanGraphics::loadModel() {
     scene.addModel({.modelPath   = "Resources/Models/viking_room.obj",
                     .texturePath = "Resources/Textures/viking_room.png"});
     scene.read();
 }
 
-void VulkanGraphics::createDescriptor()
-{
+void VulkanGraphics::createDescriptor() {
     std::array<vk::DescriptorPoolSize, 2> poolSizes{};
     poolSizes[0]
         .setType(vk::DescriptorType::eUniformBuffer)
@@ -493,8 +459,7 @@ void VulkanGraphics::createDescriptor()
         scene.getUniformBufferRs(), scene.getTextureSampler(0), scene.getTextureImageView(0));
 }
 
-void VulkanGraphics::createCommandBuffers()
-{
+void VulkanGraphics::createCommandBuffers() {
     commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
     vk::CommandBufferAllocateInfo allocInfo{};
@@ -505,8 +470,7 @@ void VulkanGraphics::createCommandBuffers()
     depackReturnValue(commandBuffers, device.allocateCommandBuffers(allocInfo));
 }
 
-void VulkanGraphics::createSyncObjects()
-{
+void VulkanGraphics::createSyncObjects() {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -515,16 +479,14 @@ void VulkanGraphics::createSyncObjects()
     vk::FenceCreateInfo     fenceInfo{};
     fenceInfo.setFlags(vk::FenceCreateFlagBits::eSignaled);
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         depackReturnValue(imageAvailableSemaphores[i], device.createSemaphore(semaphoreInfo));
         depackReturnValue(renderFinishedSemaphores[i], device.createSemaphore(semaphoreInfo));
         depackReturnValue(inFlightFences[i], device.createFence(fenceInfo));
     }
 }
 
-void VulkanGraphics::cleanupSwapChain()
-{
+void VulkanGraphics::cleanupSwapChain() {
     colorImageR.destroy();
     depthImageR.destroy();
 
@@ -536,17 +498,14 @@ void VulkanGraphics::cleanupSwapChain()
     swapchainR.destroy();
 }
 
-void VulkanGraphics::recreateSwapChain()
-{
+void VulkanGraphics::recreateSwapChain() {
     auto bufferSize = window.getFramebufferSize();
-    while (bufferSize.width == 0 || bufferSize.height == 0)
-    {
+    while (bufferSize.width == 0 || bufferSize.height == 0) {
         bufferSize = window.getFramebufferSize();
         window.waitEvents();
     }
 
-    while (device.waitIdle() == vk::Result::eTimeout)
-    {
+    while (device.waitIdle() == vk::Result::eTimeout) {
         logger->warn("device waitIdle in recreateSwapChain(): timeout.");
     }
 
@@ -559,15 +518,13 @@ void VulkanGraphics::recreateSwapChain()
     createFramebuffers();
 }
 
-bool VulkanGraphics::isDeviceSuitable(const vk::PhysicalDevice& phyDevice)
-{
+bool VulkanGraphics::isDeviceSuitable(const vk::PhysicalDevice& phyDevice) {
     QueueFamilyIndices indices = QueueFamilyIndices(phyDevice, surface);
 
     auto extensionsSupported = checkDeviceExtensionSupport(phyDevice, deviceExtensions);
 
     bool swapChainAdequate = false;
-    if (extensionsSupported)
-    {
+    if (extensionsSupported) {
         SwapChainSupportDetails swapChainSupport{phyDevice, surface};
         swapChainAdequate =
             !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
@@ -579,8 +536,7 @@ bool VulkanGraphics::isDeviceSuitable(const vk::PhysicalDevice& phyDevice)
            supportedFeatures.samplerAnisotropy;
 }
 
-void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer cmdBuffer, uint32_t imageIndex)
-{
+void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer cmdBuffer, uint32_t imageIndex) {
     vk::CommandBufferBeginInfo beginInfo{};
     handleVkResult(cmdBuffer.begin(beginInfo));
 
@@ -592,28 +548,27 @@ void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer cmdBuffer, uint32_t i
 
     vk::RenderPassBeginInfo renderPassInfo{};
     renderPassInfo.setRenderPass(renderPass.renderPass)
-        .setFramebuffer(swapchainFramebuffers[imageIndex])
-        .setRenderArea(renderArea)
-        .setClearValues(clearValues);
+                  .setFramebuffer(swapchainFramebuffers[imageIndex])
+                  .setRenderArea(renderArea)
+                  .setClearValues(clearValues);
     cmdBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
     cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
     vk::Viewport viewport{};
     viewport.setX(0.0f)
-        .setY(0.0f)
-        .setWidth(static_cast<float>(extent.width))
-        .setHeight(static_cast<float>(extent.height))
-        .setMinDepth(0.0f)
-        .setMaxDepth(1.0f);
+            .setY(0.0f)
+            .setWidth(static_cast<float>(extent.width))
+            .setHeight(static_cast<float>(extent.height))
+            .setMinDepth(0.0f)
+            .setMaxDepth(1.0f);
     cmdBuffer.setViewport(0, viewport);
 
     vk::Rect2D scissor{};
     scissor.setOffset({0, 0}).setExtent(extent);
     cmdBuffer.setScissor(0, scissor);
 
-    for (auto& func : tickCmdFuncs)
-    {
+    for (auto& func : tickCmdFuncs) {
         func(cmdBuffer);
     }
 
@@ -621,8 +576,7 @@ void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer cmdBuffer, uint32_t i
     handleVkResult(cmdBuffer.end());
 }
 
-vk::Format VulkanGraphics::findDepthFormat()
-{
+vk::Format VulkanGraphics::findDepthFormat() {
     return findSupportedFormat(
         phyDevice,
         {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
@@ -630,12 +584,11 @@ vk::Format VulkanGraphics::findDepthFormat()
         vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 }
 
-void disposableCommands(std::function<void(vk::CommandBuffer&)> func)
-{
+void disposableCommands(std::function<void(vk::CommandBuffer&)> func) {
     vk::CommandBufferAllocateInfo allocInfo{};
     allocInfo.setLevel(vk::CommandBufferLevel::ePrimary)
-        .setCommandPool(VulkanGraphics::commandPool)
-        .setCommandBufferCount(1);
+             .setCommandPool(VulkanGraphics::commandPool)
+             .setCommandBufferCount(1);
 
     std::vector<vk::CommandBuffer> cmdBuffers{};
     depackReturnValue(cmdBuffers, VulkanGraphics::device.allocateCommandBuffers(allocInfo));
@@ -654,8 +607,7 @@ void disposableCommands(std::function<void(vk::CommandBuffer&)> func)
     submitInfo.setCommandBuffers(cmdBuffer);
 
     handleVkResult(VulkanGraphics::graphicsQueue.submit(submitInfo));
-    while (VulkanGraphics::graphicsQueue.waitIdle() == vk::Result::eTimeout)
-    {
+    while (VulkanGraphics::graphicsQueue.waitIdle() == vk::Result::eTimeout) {
         logger->warn("graphicsQueue waitIdle in disposableCommands(): timeout.");
     }
 
@@ -669,14 +621,13 @@ VKAPI_ATTR VkResult VKAPI_CALL
 vkCreateDebugUtilsMessengerEXT(VkInstance                                instance,
                                const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
                                const VkAllocationCallbacks*              pAllocator,
-                               VkDebugUtilsMessengerEXT*                 pMessenger)
-{
+                               VkDebugUtilsMessengerEXT*                 pMessenger) {
     return pfnVkCreateDebugUtilsMessengerEXT(instance, pCreateInfo, pAllocator, pMessenger);
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(VkInstance                   instance,
-                                                           VkDebugUtilsMessengerEXT     messenger,
-                                                           VkAllocationCallbacks const* pAllocator)
-{
+VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
+    VkInstance                   instance,
+    VkDebugUtilsMessengerEXT     messenger,
+    VkAllocationCallbacks const* pAllocator) {
     return pfnVkDestroyDebugUtilsMessengerEXT(instance, messenger, pAllocator);
 }

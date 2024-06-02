@@ -6,11 +6,9 @@
 
 #include <string_view>
 
-namespace TBE::Scene
-{
+namespace TBE::Scene {
 
-struct __ModelInitArgs // args of Model::Init
-{
+struct __ModelInitArgs { // args of Model::Init
     // use like this: model.init({.modelPath = "xxx", .texturePath="xxx", .slowRead=false});
     // do not create a specific object for this struct
     std::string_view modelPath   = nullptr;
@@ -20,11 +18,9 @@ struct __ModelInitArgs // args of Model::Init
 
 } // namespace TBE::Scene
 
-namespace TBE::Scene::Model
-{
+namespace TBE::Scene::Model {
 
-class Model
-{
+class Model {
 public:
     void init(__ModelInitArgs args = {});
     void destroy();

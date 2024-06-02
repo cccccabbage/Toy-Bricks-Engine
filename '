@@ -17,18 +17,15 @@ constexpr std::array directionKeys = {
 };
 
 constexpr std::array rotationKeys = {
-    std::make_tuple(0,  1.0f, KeyBit::eUp),    // x
-    std::make_tuple(0, -1.0f, KeyBit::eDown),  // x
-    std::make_tuple(1,  1.0f, KeyBit::eLeft),  // y
-    std::make_tuple(1, -1.0f, KeyBit::eRight), // y
+    std::make_tuple(0,  1.0f, KeyBit::eUp),
+    std::make_tuple(0, -1.0f, KeyBit::eDown),
+    std::make_tuple(1,  1.0f, KeyBit::eRight),
+    std::make_tuple(1, -1.0f, KeyBit::eLeft)
 };
 
 Camera::Camera() 
     : view{std::make_unique<glm::mat4>(glm::mat4())}
     , proj{std::make_unique<glm::mat4>(glm::mat4())} {
-    front = glm::normalize(front);
-    up    = glm::normalize(up);
-
     auto& extent = Graphics::VulkanGraphics::extent;
     *proj = glm::perspective(
         glm::radians(45.0f),
@@ -42,6 +39,7 @@ Camera::Camera()
 void Camera::tickCPU() {
     if (dirty) {
         *view = glm::lookAt(pos, pos + front, up);
+        // TODO: rotation controlled by mouse
     }
     dirty = false;
     return;
@@ -49,29 +47,13 @@ void Camera::tickCPU() {
 
 void Camera::onKeyDown(KeyStateMap keyMap) {
     // rotate camera
-    glm::vec2 angles = {0.0f, 0.0f}; // rotate by x axis and y axis
+    std::array<float, 2> angles = {0.0f, 0.0f}; // rotate by x axis and y axis
     for (const auto& [idx, sign, bit] : rotationKeys) {
         if (keyMap & (KeyStateMap)bit) {
             angles[idx] += sign;
         }
     }
-    if (angles[0] != 0 || angles[1] != 0) {
-        // the front vector and up vector are always unit vectors 
-        // so the dot product stands for cos of their angle
-        angles *= sensitivity;
-
-        auto xAxis = glm::normalize(glm::cross(front, up));
-        auto yAxis = glm::normalize(up);
-        auto trans = glm::mat4(1.0f);
-        trans = glm::rotate(trans, angles[0], xAxis);
-        trans = glm::rotate(trans, angles[1], yAxis);
-        glm::vec3 newFront = glm::normalize(trans * glm::vec4{front, 1.0f});
-
-        if (glm::abs(glm::dot(newFront, up)) > minAngleCos) {
-            front = newFront;
-            setDirty();
-        }
-    }
+    if (angles[0] != 0 || angles[1] != 0)
 
     // move camera
     glm::vec3 direction = {0.0f, 0.0f, 0.0f}; // x, y, z, in camera coordinate
@@ -81,15 +63,15 @@ void Camera::onKeyDown(KeyStateMap keyMap) {
         }
     }
     if (direction.x + direction.y + direction.z != 0) {
-        direction = glm::normalize(direction);
+            direction = glm::normalize(direction);
 
-        auto deltaPos = direction.x * glm::normalize(glm::cross(front, up)) // x for right
-                      + direction.y * glm::normalize(up)                    // y for up
-                      + direction.z * glm::normalize(front);                // z for forward
-        deltaPos *= speed;
-        pos   += deltaPos;
+            auto deltaPos = direction.x * glm::normalize(glm::cross(front, up)) // x for right
+                          + direction.y * glm::normalize(up)                    // y for up
+                          + direction.z * glm::normalize(front);                // z for forward
+            deltaPos *= speed;
+            pos   += deltaPos;
 
-        setDirty();
+            dirty = true;
     }
 }
 

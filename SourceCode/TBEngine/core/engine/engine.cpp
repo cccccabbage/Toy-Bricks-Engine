@@ -1,6 +1,7 @@
-#include "TBEngine/engine/engine.hpp"
+#include "engine.hpp"
 #include "TBEngine/utils/log/log.hpp"
 #include "TBEngine/editor/editor.hpp"
+#include "TBEngine/settings.hpp"
 
 #include <any>
 
@@ -15,7 +16,7 @@ static std::any bindFuncToAny(Args...) {
 }
 
 Engine::Engine() 
-    : winForm({1280, 720})
+    : winForm({WINDOW_WIDTH, WINDOW_HEIGHT})
     , graphic(winForm)
     , editor(graphic.getImguiInfo(), winForm.getPWindow()) {
     init();
@@ -32,9 +33,13 @@ void Engine::init() {
     graphic.bindTickCmdFunc(tickFunc);
 
     std::vector<std::tuple<DelegateManager::InputType, std::any>> funcs {};
-    std::any func1 = std::function<void(TBE::Editor::DelegateManager::KeyType)>(
+    std::any func1 = std::function<void(KeyStateMap)>(
         std::bind(&TBE::Engine::Engine::captureKeyInput, this, std::placeholders::_1));
     funcs.push_back(std::make_tuple(DelegateManager::InputType::eKeyBoard, func1));
+    auto graphicFuncs = graphic.getBindFuncs();
+    for ( auto& typeFunc : graphicFuncs) {
+        funcs.push_back(typeFunc);
+    }
 
     std::unordered_map<DelegateManager::InputType, uint32_t> delegateExsist {};
     for(auto&[type, funcAny] : funcs){
@@ -49,7 +54,7 @@ void Engine::init() {
                 editor.bindFunc<bool>(delegateExsist[type], funcAny);
                 break;
             case DelegateManager::InputType::eKeyBoard:
-                editor.bindFunc<DelegateManager::KeyType>(delegateExsist[type], funcAny);
+                editor.bindFunc<KeyStateMap>(delegateExsist[type], funcAny);
                 break;
             case DelegateManager::InputType::eUnknown:
                 Utils::Log::logErrorMsg("bad InputType");

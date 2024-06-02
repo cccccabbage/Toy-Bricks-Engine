@@ -4,11 +4,11 @@
 #include "TBEngine/core/window/window.hpp"
 #include "TBEngine/editor/editor.hpp"
 
-namespace TBE::Engine
-{
+namespace TBE::Engine {
+using TBE::Editor::DelegateManager::KeyBit;
+using TBE::Editor::DelegateManager::KeyStateMap;
 
-class Engine
-{
+class Engine {
 public:
     Engine();
     ~Engine();
@@ -22,13 +22,9 @@ private:
     void exit();
 
 private:
-    void captureKeyInput(TBE::Editor::DelegateManager::KeyType keyType) {
-        switch(keyType) {
-            case TBE::Editor::DelegateManager::KeyType::eEscape :
-                shouldClose = true;
-                break;
-            default:
-                break;
+    void captureKeyInput(KeyStateMap keyMap) {
+        if (keyMap & (KeyStateMap)(KeyBit::eEscape)) {
+            shouldClose = true;
         }
     }
 

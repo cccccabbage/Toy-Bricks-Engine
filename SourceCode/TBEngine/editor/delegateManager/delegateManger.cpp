@@ -1,5 +1,5 @@
 #include "delegateManager.hpp"
 
-namespace TBE::Editor::DelegateManager
-{
+namespace TBE::Editor::DelegateManager {
+
 }

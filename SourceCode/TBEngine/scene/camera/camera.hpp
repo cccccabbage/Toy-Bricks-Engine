@@ -2,18 +2,49 @@
 
 #include "TBEngine/utils/macros/includeGLM.hpp"
 #include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/editor/delegateManager/delegateManager.hpp"
 
-namespace TBE::Scene
-{
+#include <memory>
 
-class Camera
-{
+namespace TBE::Scene {
+using TBE::Editor::DelegateManager::KeyStateMap;
+using TBE::Editor::DelegateManager::KeyBit;
+
+class Scene;
+
+class Camera {
+    friend class Scene;
+public:
+    Camera();
+
 public:
     void tickCPU();
 
+public:
+    void onKeyDown(KeyStateMap keyMap);
+
 private:
-    glm::mat4 view{};
-    glm::mat4 proj{};
+    glm::vec3 pos   { 2.0f,  2.0f,  2.0f};
+    glm::vec3 front {-1.0f, -1.0f, -1.0f};
+    glm::vec3 up    { 0.0f,  0.0f,  1.0f};
+
+    float dirty       = true;
+    float speed       = 0.05f;
+    float sensitivity = 1.0f / 180.0f;
+
+private:
+    std::unique_ptr<glm::mat4> view = nullptr;
+    std::unique_ptr<glm::mat4> proj = nullptr;
+
+private:
+    inline static float minAngleCos = glm::cos(155.0f / 180.0f * glm::pi<float>());
+
+private:
+    void setDirty() {
+        front = glm::normalize(front);
+        up    = glm::normalize(up);
+        dirty = true;
+    }
 };
 
 } // namespace TBE::Scene

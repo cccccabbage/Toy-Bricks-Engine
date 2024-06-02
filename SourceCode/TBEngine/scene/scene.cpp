@@ -3,11 +3,10 @@
 #include "TBEngine/core/graphics/graphics.hpp"
 
 
-namespace TBE::Scene
-{
+namespace TBE::Scene {
+using namespace TBE::Editor::DelegateManager;
 
-void Scene::destroy()
-{
+void Scene::destroy() {
     std::for_each(models.begin(), models.end(), [](Model::Model& model) { model.destroy(); });
     std::for_each(uniformBufferRs.begin(),
                   uniformBufferRs.end(),
@@ -16,14 +15,22 @@ void Scene::destroy()
     shader.destroy();
 }
 
-void Scene::tickCPU()
-{
+std::vector<std::tuple<TBE::Editor::DelegateManager::InputType, std::any>> Scene::getBindFuncs() {
+    std::any func1 = std::function<void(KeyStateMap)>(
+        std::bind(&Camera::Camera::onKeyDown, &camera, std::placeholders::_1));
+
+    return {
+        std::make_tuple(InputType::eKeyBoard,  func1)
+    };
+}
+
+void Scene::tickCPU() {
+    camera.tickCPU();
     updateUniformBuffer();
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Scene::tickGPU(const vk::CommandBuffer& cmdBuffer, const vk::PipelineLayout& layout)
-{
+void Scene::tickGPU(const vk::CommandBuffer& cmdBuffer, const vk::PipelineLayout& layout) {
     // model
     std::array                                       vertexBuffers = {getVertBuffer(0)};
     std::array<vk::DeviceSize, vertexBuffers.size()> offsets       = {0};
@@ -37,8 +44,7 @@ void Scene::tickGPU(const vk::CommandBuffer& cmdBuffer, const vk::PipelineLayout
     cmdBuffer.drawIndexed(static_cast<uint32_t>(getIdxSize(0)), 1, 0, 0, 0);
 }
 
-void Scene::updateUniformBuffer()
-{
+void Scene::updateUniformBuffer() {
     static auto startTime = std::chrono::high_resolution_clock::now();
     const auto& extent    = Graphics::VulkanGraphics::extent;
 
@@ -47,20 +53,19 @@ void Scene::updateUniformBuffer()
         std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     Math::DataFormat::UniformBufferObject ubo{};
+    // ubo.model =
+    //     glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.model =
-        glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(
-        glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.proj =
-        glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.1f, 10.0f);
-    ubo.proj[1][1] *= -1; // important: Vulkan has a different coordinates from OpenGL
+        glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    ubo.view = *camera.view;
+    ubo.proj = *camera.proj;
 
     std::span<std::byte> data(static_cast<std::byte*>(static_cast<void*>(&ubo)), sizeof(ubo));
     uniformBufferRs[currentFrame].update(data);
 }
 
-void Scene::read()
-{
+void Scene::read() {
     if (models.empty()) { logger->warn("Try to read but no model has been prepared"); }
     std::for_each(models.begin(), models.end(), [](Model::Model& model) { model.read(); });
 
@@ -74,8 +79,7 @@ void Scene::read()
                   });
 }
 
-void Scene::addModel(const __SceneAddModelArgs args)
-{
+void Scene::addModel(const __SceneAddModelArgs args) {
     models.emplace_back();
     models.back().init(
         {.modelPath = args.modelPath, .texturePath = args.texturePath, .slowRead = true});

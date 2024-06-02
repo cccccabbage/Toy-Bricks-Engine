@@ -11,25 +11,21 @@
 #include <imgui_impl_vulkan.h>
 #include <functional>
 
-namespace TBE::Window
-{
+namespace TBE::Window {
 class Window;
 }
 
-namespace TBE
-{
+namespace TBE {
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 }
 
-namespace TBE::Graphics
-{
+namespace TBE::Graphics {
 const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 const std::vector<const char*> deviceExtensions = {vk::KHRSwapchainExtensionName};
 
 void disposableCommands(std::function<void(vk::CommandBuffer&)> func);
 
-class VulkanGraphics final
-{
+class VulkanGraphics final {
 private:
     friend void disposableCommands(std::function<void(vk::CommandBuffer&)> func);
 
@@ -48,6 +44,8 @@ public:
     bool*                     getPFrameBufferResized();
     void                      bindTickCmdFunc(std::function<void(const vk::CommandBuffer&)> func);
     ImGui_ImplVulkan_InitInfo getImguiInfo();
+
+    auto getBindFuncs() { return scene.getBindFuncs(); }
 
 private:
     void createInstance();

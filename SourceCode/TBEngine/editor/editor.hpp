@@ -6,7 +6,7 @@
 
 namespace TBE::Editor {
 
-class Editor : public Ui::Ui, public DelegateManager::DelegateManager{
+class Editor : public Ui::Ui, public DelegateManager::DelegateManager {
 public:
     Editor(ImGui_ImplVulkan_InitInfo imguiInfo, GLFWwindow *pWindow_);
     ~Editor();
