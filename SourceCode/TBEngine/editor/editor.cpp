@@ -1,6 +1,6 @@
 #include "editor.hpp"
 #include "imgui.h"
-#include "TBEngine/core/graphics/graphics.hpp"
+#include "TBEngine/utils/macros/includeVulkan.hpp"
 
 namespace TBE::Editor {
 using TBE::Editor::DelegateManager::KeyStateMap;
@@ -20,6 +20,7 @@ const std::unordered_map<ImGuiKey, KeyBit> keyCaptureList = {
     {ImGuiKey_RightArrow, KeyBit::eRight},
     {ImGuiKey_UpArrow,    KeyBit::eUp},
     {ImGuiKey_DownArrow,  KeyBit::eDown},
+    {ImGuiKey_R,          KeyBit::eR},
 };
 
 Editor::Editor(ImGui_ImplVulkan_InitInfo imguiInfo, GLFWwindow *pWindow_)

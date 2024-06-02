@@ -2,10 +2,8 @@
 
 #include "TBEngine/utils/delegate/delegate.hpp"
 #include "TBEngine/utils/log/log.hpp"
-#include "TBEngine/utils/macros/includeGLFW.hpp"
 
 #include <any>
-#include <algorithm>
 #include <unordered_map>
 
 namespace TBE::Editor::DelegateManager {
@@ -33,6 +31,7 @@ enum class KeyBit : uint64_t {
     eRight     = eLeft << 1,
     eUp        = eRight << 1,
     eDown      = eUp << 1,
+    eR         = eDown << 1,
 };
 
 struct DelegateIndexGetter {

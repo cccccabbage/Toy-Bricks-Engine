@@ -23,6 +23,8 @@ constexpr std::array rotationKeys = {
     std::make_tuple(1, -1.0f, KeyBit::eRight), // y
 };
 
+constexpr std::array functionKeys = { KeyBit::eR };
+
 Camera::Camera() 
     : view{std::make_unique<glm::mat4>(glm::mat4())}
     , proj{std::make_unique<glm::mat4>(glm::mat4())} {
@@ -90,6 +92,10 @@ void Camera::onKeyDown(KeyStateMap keyMap) {
         pos   += deltaPos;
 
         setDirty();
+    }
+
+    if (keyMap & (KeyStateMap)KeyBit::eR) {
+        resetCamera();
     }
 }
 

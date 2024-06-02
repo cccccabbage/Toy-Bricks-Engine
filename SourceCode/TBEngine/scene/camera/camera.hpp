@@ -1,7 +1,6 @@
 #pragma once
 
 #include "TBEngine/utils/macros/includeGLM.hpp"
-#include "TBEngine/utils/macros/includeVulkan.hpp"
 #include "TBEngine/editor/delegateManager/delegateManager.hpp"
 
 #include <memory>
@@ -44,6 +43,13 @@ private:
         front = glm::normalize(front);
         up    = glm::normalize(up);
         dirty = true;
+    }
+
+    void resetCamera() {
+        pos   = {2.0f, 2.0f, 2.0f};
+        front = {-1.0f, -1.0f, -1.0f};
+        up    = {0.0f, 0.0f, 1.0f};
+        setDirty();
     }
 };
 
