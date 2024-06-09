@@ -4,8 +4,7 @@
 #include "TBEngine/core/graphics/vulkanAbstract/bufferResource/stagingBuffer.hpp"
 #include "TBEngine/core/graphics/graphics.hpp"
 
-namespace TBE::Resource
-{
+namespace TBE::Resource {
 using namespace TBE::Utils::Log;
 using TBE::Graphics::ImageResourceType;
 using TBE::Graphics::StagingBuffer;
@@ -13,37 +12,32 @@ using TBE::Graphics::StagingBuffer;
 Texture::Texture()
     : device(Graphics::VulkanGraphics::device)
     , phyDevice(Graphics::VulkanGraphics::phyDevice)
-    , imageR()
-{
+    , imageR() {
 }
 
-Texture::~Texture()
-{
+Texture::~Texture() {
     destroy();
 }
 
-void Texture::destroy()
-{
-    if (samplerInited)
-    {
+void Texture::destroy() {
+    if (samplerInited) {
         device.destroy(sampler);
         samplerInited = false;
     }
-    if (imageRInited)
-    {
+    if (imageRInited) {
         imageR.destroy();
         imageRInited = false;
     }
 }
 
-void Texture::init(const std::filesystem::path& filePath_, bool slowRead)
-{
+void Texture::init(const std::filesystem::path& filePath_, bool slowRead) {
     file.newFile(filePath_);
-    if (!slowRead) { read(); }
+    if (!slowRead) {
+        read();
+    }
 }
 
-void Texture::read()
-{
+void Texture::read() {
     auto           texContent = file.read();
     auto           pixels     = texContent->pixels;
     int            texHeight = texContent->texHeight, texWidth = texContent->texWidth;
@@ -88,8 +82,7 @@ void Texture::read()
     samplerInited = true;
 }
 
-void Texture::transitionImageLayout(__TextureTransitionImageLayoutArgs args)
-{
+void Texture::transitionImageLayout(__TextureTransitionImageLayoutArgs args) {
     auto& [image, format, oldLayout, newLayout, miplevels] = args;
     vk::ImageSubresourceRange subresourceRange{};
     subresourceRange.setBaseMipLevel(0).setLevelCount(mipLevels).setBaseArrayLayer(0).setLayerCount(
@@ -106,24 +99,22 @@ void Texture::transitionImageLayout(__TextureTransitionImageLayoutArgs args)
     vk::PipelineStageFlags sourceStage{};
     vk::PipelineStageFlags destinationStage{};
     if (oldLayout == vk::ImageLayout::eUndefined &&
-        newLayout == vk::ImageLayout::eTransferDstOptimal)
-    {
+        newLayout == vk::ImageLayout::eTransferDstOptimal) {
         barrier.setSrcAccessMask(vk::AccessFlagBits::eNone)
             .setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
 
         sourceStage      = vk::PipelineStageFlagBits::eTopOfPipe;
         destinationStage = vk::PipelineStageFlagBits::eTransfer;
-    }
-    else if (oldLayout == vk::ImageLayout::eTransferDstOptimal &&
-             newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
-    {
+    } else if (oldLayout == vk::ImageLayout::eTransferDstOptimal &&
+               newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
         barrier.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
             .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
 
         sourceStage      = vk::PipelineStageFlagBits::eTransfer;
         destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
+    } else {
+        logErrorMsg("unsupported layout transition!");
     }
-    else { logErrorMsg("unsupported layout transition!"); }
 
     auto func = [&sourceStage, &destinationStage, &barrier](vk::CommandBuffer& cmdBuffer) {
         cmdBuffer.pipelineBarrier( // TODO: what's this
@@ -138,12 +129,10 @@ void Texture::transitionImageLayout(__TextureTransitionImageLayoutArgs args)
     Graphics::disposableCommands(func);
 }
 
-void Texture::generateMipmaps()
-{
+void Texture::generateMipmaps() {
     auto formatProperties = phyDevice.getFormatProperties(imageR.format);
     if (!(formatProperties.optimalTilingFeatures &
-          vk::FormatFeatureFlagBits::eSampledImageFilterLinear))
-    {
+          vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
         logErrorMsg("texture image format does not support linear blitting!");
     }
 
@@ -159,8 +148,7 @@ void Texture::generateMipmaps()
 
         int32_t mipWidth = imageR.width, mipHeight = imageR.height;
 
-        for (uint32_t i = 1; i < mipLevels; i++)
-        {
+        for (uint32_t i = 1; i < mipLevels; i++) {
             barrier.subresourceRange.baseMipLevel = i - 1;
             barrier.oldLayout                     = vk::ImageLayout::eTransferDstOptimal;
             barrier.newLayout                     = vk::ImageLayout::eTransferSrcOptimal;
@@ -207,8 +195,10 @@ void Texture::generateMipmaps()
                                       {},
                                       {},
                                       barrier);
-            if (mipWidth > 1) mipWidth /= 2;
-            if (mipHeight > 1) mipHeight /= 2;
+            if (mipWidth > 1)
+                mipWidth /= 2;
+            if (mipHeight > 1)
+                mipHeight /= 2;
         }
         barrier.subresourceRange.baseMipLevel = mipLevels - 1;
         barrier.setOldLayout(vk::ImageLayout::eTransferDstOptimal)

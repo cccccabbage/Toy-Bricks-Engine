@@ -7,10 +7,8 @@
 #include <filesystem>
 
 
-namespace TBE::Resource
-{
-struct __TextureTransitionImageLayoutArgs
-{
+namespace TBE::Resource {
+struct __TextureTransitionImageLayoutArgs {
     vk::Image       image{};
     vk::Format      format{};
     vk::ImageLayout oldLayout{};
@@ -20,11 +18,9 @@ struct __TextureTransitionImageLayoutArgs
 
 } // namespace TBE::Resource
 
-namespace TBE::Resource
-{
+namespace TBE::Resource {
 
-class Texture
-{
+class Texture {
 public:
     Texture();
 

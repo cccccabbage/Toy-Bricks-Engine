@@ -19,9 +19,7 @@ std::vector<std::tuple<TBE::Editor::DelegateManager::InputType, std::any>> Scene
     std::any func1 = std::function<void(KeyStateMap)>(
         std::bind(&Camera::Camera::onKeyDown, &camera, std::placeholders::_1));
 
-    return {
-        std::make_tuple(InputType::eKeyBoard,  func1)
-    };
+    return {std::make_tuple(InputType::eKeyBoard, func1)};
 }
 
 void Scene::tickCPU() {
@@ -55,8 +53,7 @@ void Scene::updateUniformBuffer() {
     Math::DataFormat::UniformBufferObject ubo{};
     // ubo.model =
     //     glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.model =
-        glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
     ubo.view = *camera.view;
     ubo.proj = *camera.proj;
@@ -66,7 +63,9 @@ void Scene::updateUniformBuffer() {
 }
 
 void Scene::read() {
-    if (models.empty()) { logger->warn("Try to read but no model has been prepared"); }
+    if (models.empty()) {
+        logger->warn("Try to read but no model has been prepared");
+    }
     std::for_each(models.begin(), models.end(), [](Model::Model& model) { model.read(); });
 
     vk::DeviceSize bufferSize = sizeof(Math::DataFormat::UniformBufferObject);

@@ -5,11 +5,9 @@
 #include <string>
 #include <vector>
 
-namespace TBE::Resource::File
-{
+namespace TBE::Resource::File {
 
-class ShaderFile : public FileBase
-{
+class ShaderFile : public FileBase {
     using super = FileBase;
 
 public:

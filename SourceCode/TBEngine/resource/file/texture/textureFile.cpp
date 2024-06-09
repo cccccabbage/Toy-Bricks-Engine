@@ -10,15 +10,12 @@
 
 extern const TBE::Utils::Log::Logger* logger;
 
-namespace TBE::Resource::File
-{
+namespace TBE::Resource::File {
 
 std::vector<std::string> TextureFile::supportedTextureTypes = {};
 
-TextureFile::TextureFile(const std::filesystem::path& filePath_) : FileBase(filePath_)
-{
-    if (supportedTextureTypes.empty())
-    {
+TextureFile::TextureFile(const std::filesystem::path& filePath_) : FileBase(filePath_) {
+    if (supportedTextureTypes.empty()) {
         supportedTextureTypes.emplace_back(".jpg");
         supportedTextureTypes.emplace_back(".png");
     }
@@ -26,21 +23,20 @@ TextureFile::TextureFile(const std::filesystem::path& filePath_) : FileBase(file
 }
 
 TextureFile::TextureFile(const std::string& filePath_)
-    : TextureFile(std::filesystem::path(filePath_))
-{
+    : TextureFile(std::filesystem::path(filePath_)) {
 }
 
-TextureFile::TextureFile(const char* filePath_) : TextureFile(std::string(filePath_)) {}
+TextureFile::TextureFile(const char* filePath_) : TextureFile(std::string(filePath_)) {
+}
 
-const TextureContent* TextureFile::read()
-{
-    if (texContent.pixels) return &texContent;
+const TextureContent* TextureFile::read() {
+    if (texContent.pixels)
+        return &texContent;
 
     int  texWidth, texHeight, texChannel;
     auto pixels =
         stbi_load(filePath.string().c_str(), &texWidth, &texHeight, &texChannel, STBI_rgb_alpha);
-    if (!pixels)
-    {
+    if (!pixels) {
         const std::string msg = "failed to load texture image!";
         logger->error(msg);
         throw std::runtime_error(msg);
@@ -49,20 +45,16 @@ const TextureContent* TextureFile::read()
     return &texContent;
 }
 
-void TextureFile::free()
-{
-    if (texContent.pixels)
-    {
+void TextureFile::free() {
+    if (texContent.pixels) {
         stbi_image_free(texContent.pixels);
         texContent = {};
     }
 }
 
-bool TextureFile::checkPathValid()
-{
+bool TextureFile::checkPathValid() {
     bool ret = FileBase::checkPathValid();
-    if (ret)
-    {
+    if (ret) {
         const std::string fileExt  = filePath.extension().string();
         bool              contains = false;
         auto              findExt  = [&fileExt, &contains](std::string& supExt) -> void {
@@ -74,11 +66,11 @@ bool TextureFile::checkPathValid()
     return ret;
 }
 
-void TextureFile::releaseOldFile()
-{
+void TextureFile::releaseOldFile() {
     free();
 }
 
-void TextureFile::prepareNewFile() {}
+void TextureFile::prepareNewFile() {
+}
 
 } // namespace TBE::Resource::File

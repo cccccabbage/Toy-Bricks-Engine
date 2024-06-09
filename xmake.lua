@@ -14,8 +14,8 @@ add_requires(             -- 3rd libs managed by xrepo
 )
 
 target("Toy-Bricks-Engine")
-set_kind("binary")
-add_includedirs("SourceCode/")
-add_files("SourceCode/TBEngine/**.cpp")
-add_files("SourceCode/main.cpp")
-add_packages("vulkansdk", "spdlog", "glfw", "glm", "stb", "imgui", "vcpkg::tinyobjloader")
+	set_kind("binary")
+	add_includedirs("SourceCode/")
+	add_files("SourceCode/TBEngine/**.cpp")
+	add_files("SourceCode/main.cpp")
+	add_packages("vulkansdk", "spdlog", "glfw", "glm", "stb", "imgui", "vcpkg::tinyobjloader")

@@ -40,3 +40,5 @@ void logErrorMsg(const std::string& msg) {
 }
 
 } // namespace TBE::Utils::Log
+
+const TBE::Utils::Log::Logger* logger = nullptr;

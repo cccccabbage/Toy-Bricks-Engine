@@ -39,22 +39,19 @@ public: // model related
     void addModel(const __SceneAddModelArgs args = {});
 
 public: // shader related
-    void addShader(std::string filePath, Resource::ShaderType type)
-    {
+    void addShader(std::string filePath, Resource::ShaderType type) {
         shader.addShader(filePath, type);
     }
 
     auto        initDescriptorSetLayout() { return shader.initDescriptorSetLayout(); }
     const auto& getDescriptorSetLayout() { return shader.descriptors.layout; }
     void        destroyShaderCache() { shader.destroyCache(); }
-    void initDescriptorPool(uint32_t maxSets, const std::span<vk::DescriptorPoolSize> poolSizes)
-    {
+    void initDescriptorPool(uint32_t maxSets, const std::span<vk::DescriptorPoolSize> poolSizes) {
         shader.descriptors.initPool(maxSets, poolSizes);
     }
     void initDescriptorSets(const std::span<Graphics::BufferResourceUniform> uniBuffers,
                             const vk::Sampler&                               sampler,
-                            const vk::ImageView&                             sampleTarget)
-    {
+                            const vk::ImageView&                             sampleTarget) {
         shader.descriptors.initSets(uniBuffers, sampler, sampleTarget);
     }
 
@@ -71,7 +68,7 @@ public:
     Resource::Shader shader{};
 
 private:
-    Camera                                       camera {};
+    Camera                                       camera{};
     std::vector<Model::Model>                    models{};
     std::vector<Graphics::BufferResourceUniform> uniformBufferRs{};
     uint32_t                                     currentFrame = 0;

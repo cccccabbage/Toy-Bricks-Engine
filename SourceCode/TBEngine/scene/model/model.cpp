@@ -2,29 +2,31 @@
 #include "TBEngine/utils/log/log.hpp"
 
 
-namespace TBE::Scene::Model
-{
+namespace TBE::Scene::Model {
 
-void Model::init(__ModelInitArgs args)
-{
+void Model::init(__ModelInitArgs args) {
     modelFile.newFile(args.modelPath);
-    if (!modelFile.isValid()) { Utils::Log::logErrorMsg("invalid file path for model"); }
+    if (!modelFile.isValid()) {
+        Utils::Log::logErrorMsg("invalid file path for model");
+    }
     textureFile.init(args.texturePath, args.slowRead);
-    if (!textureFile.file.isValid()) { Utils::Log::logErrorMsg("invalid file path for texture"); }
+    if (!textureFile.file.isValid()) {
+        Utils::Log::logErrorMsg("invalid file path for texture");
+    }
 
-    if (!args.slowRead) { read(); }
+    if (!args.slowRead) {
+        read();
+    }
 }
 
-void Model::destroy()
-{
+void Model::destroy() {
     textureFile.destroy();
     modelFile.free();
     vertBuf.destroy();
     idxBuf.destroy();
 }
 
-void Model::read()
-{
+void Model::read() {
     modelFile.read();
     textureFile.read();
 

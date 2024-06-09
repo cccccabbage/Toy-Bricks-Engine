@@ -7,12 +7,11 @@
 #include <imgui_impl_vulkan.h>
 #include <imgui_impl_glfw.h>
 
-namespace TBE::Editor::Ui
-{
+namespace TBE::Editor::Ui {
 
 class Ui {
 public:
-    Ui(ImGui_ImplVulkan_InitInfo imguiInfo, GLFWwindow *pWindow);
+    Ui(ImGui_ImplVulkan_InitInfo imguiInfo, GLFWwindow* pWindow);
     ~Ui();
 
 public:
@@ -22,4 +21,4 @@ private:
     vk::DescriptorPool descPool{};
 };
 
-} // namespace TBE::Ui
+} // namespace TBE::Editor::Ui

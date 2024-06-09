@@ -8,19 +8,16 @@
 #include <vector>
 #include <filesystem>
 
-namespace TBE::Resource::File
-{
+namespace TBE::Resource::File {
 
-struct TextureContent
-{
+struct TextureContent {
     stbi_uc* pixels = nullptr;
     int      texHeight{};
     int      texWidth{};
     int      texChannel{};
 };
 
-class TextureFile : public FileBase
-{
+class TextureFile : public FileBase {
     using super = FileBase;
 
 public:

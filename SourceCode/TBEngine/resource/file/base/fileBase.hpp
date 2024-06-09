@@ -3,16 +3,13 @@
 #include <string>
 #include <filesystem>
 
-namespace TBE::Resource::File
-{
+namespace TBE::Resource::File {
 
-class FileBase
-{
+class FileBase {
 public:
     FileBase(const std::string& filePath_) : filePath(filePath_), valid(checkPathValid()) {}
-    FileBase(const std::filesystem::path& filePath_) : filePath(filePath_), valid(checkPathValid())
-    {
-    }
+    FileBase(const std::filesystem::path& filePath_)
+        : filePath(filePath_), valid(checkPathValid()) {}
 
 protected:
     std::filesystem::path filePath{};
@@ -20,22 +17,22 @@ protected:
 
 public:
     void newFile(const std::string& newPath) { newFile(std::filesystem::path(newPath)); }
-    void newFile(const std::filesystem::path newPath)
-    {
+    void newFile(const std::filesystem::path newPath) {
         releaseOldFile();
         filePath = newPath;
-        if (checkPathValid()) prepareNewFile();
+        if (checkPathValid())
+            prepareNewFile();
     }
-    const std::string getPath() const
-    {
-        if (!valid) { return "valid path"; }
+    const std::string getPath() const {
+        if (!valid) {
+            return "valid path";
+        }
         return filePath.string();
     }
     bool isValid() const { return valid; }
 
 protected:
-    virtual bool checkPathValid()
-    {
+    virtual bool checkPathValid() {
         valid = (!std::filesystem::is_directory(filePath)) && std::filesystem::exists(filePath);
         return valid;
     }

@@ -5,22 +5,23 @@
 #include <algorithm>
 #include <fstream>
 
-namespace TBE::Resource::File
-{
+namespace TBE::Resource::File {
 
 std::vector<std::string> ShaderFile::supportedShaderTypes = {};
 
-ShaderFile::ShaderFile(const std::string filePath_) : super(filePath_)
-{
-    if (supportedShaderTypes.empty()) { supportedShaderTypes.emplace_back(".spv"); }
+ShaderFile::ShaderFile(const std::string filePath_) : super(filePath_) {
+    if (supportedShaderTypes.empty()) {
+        supportedShaderTypes.emplace_back(".spv");
+    }
     valid = checkPathValid();
 }
 
-std::vector<char> ShaderFile::read() const
-{
+std::vector<char> ShaderFile::read() const {
     std::ifstream file(filePath.string(), std::ios::ate | std::ios::binary);
 
-    if (!file.is_open()) { throw std::runtime_error("failed to open file!"); }
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open file!");
+    }
 
     size_t            fileSize = (size_t)file.tellg();
     std::vector<char> buffer(fileSize);
@@ -32,11 +33,9 @@ std::vector<char> ShaderFile::read() const
     return std::move(buffer);
 }
 
-bool ShaderFile::checkPathValid()
-{
+bool ShaderFile::checkPathValid() {
     bool ret = super::checkPathValid();
-    if (ret)
-    {
+    if (ret) {
         const std::string fileExt  = filePath.extension().string();
         bool              contains = false;
         auto              findExt  = [&fileExt, &contains](std::string& supExt) -> void {
@@ -48,8 +47,10 @@ bool ShaderFile::checkPathValid()
     return ret;
 }
 
-void ShaderFile::releaseOldFile() {}
+void ShaderFile::releaseOldFile() {
+}
 
-void ShaderFile::prepareNewFile() {}
+void ShaderFile::prepareNewFile() {
+}
 
 } // namespace TBE::Resource::File

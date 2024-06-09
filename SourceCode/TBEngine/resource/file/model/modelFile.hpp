@@ -7,11 +7,9 @@
 #include <vector>
 #include <span>
 
-namespace TBE::Resource::File
-{
+namespace TBE::Resource::File {
 
-class ModelFile : public FileBase
-{
+class ModelFile : public FileBase {
     using super = FileBase;
 
 public:
@@ -26,13 +24,11 @@ public:
     void                       free();
     const decltype(vertices)&  getVertices() { return vertices; };
     const decltype(indices)&   getIndices() { return indices; };
-    const std::span<std::byte> getVerticesByte()
-    {
+    const std::span<std::byte> getVerticesByte() {
         return std::span<std::byte>(static_cast<std::byte*>(static_cast<void*>(vertices.data())),
                                     vertices.size() * sizeof(vertices[0]));
     }
-    const std::span<std::byte> getIndicesByte()
-    {
+    const std::span<std::byte> getIndicesByte() {
         return std::span<std::byte>(static_cast<std::byte*>(static_cast<void*>(indices.data())),
                                     indices.size() * sizeof(indices[0]));
     }

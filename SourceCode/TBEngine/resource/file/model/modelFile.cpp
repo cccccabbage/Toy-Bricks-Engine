@@ -9,24 +9,22 @@
 #include <algorithm>
 #include <unordered_map>
 
-namespace TBE::Resource::File
-{
+namespace TBE::Resource::File {
 
 using Math::DataFormat::idxType;
 using Math::DataFormat::Vertex;
 
 std::vector<std::string> ModelFile::supportedShaderTypes = {};
 
-ModelFile::ModelFile(const std::string filePath_) : super(filePath_)
-{
-    if (supportedShaderTypes.empty()) { supportedShaderTypes.emplace_back(".obj"); }
+ModelFile::ModelFile(const std::string filePath_) : super(filePath_) {
+    if (supportedShaderTypes.empty()) {
+        supportedShaderTypes.emplace_back(".obj");
+    }
     valid = checkPathValid();
 }
 
-void ModelFile::read()
-{
-    if (!vertices.empty())
-    {
+void ModelFile::read() {
+    if (!vertices.empty()) {
         logger->warn("Model data already exist.");
         return;
     }
@@ -36,8 +34,7 @@ void ModelFile::read()
     std::vector<tinyobj::material_t> materials{};
     std::string                      warn, err{};
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filePath.string().c_str()))
-    {
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filePath.string().c_str())) {
         auto msg = warn + err;
         logger->error(msg);
         throw std::runtime_error(msg);
@@ -45,10 +42,8 @@ void ModelFile::read()
 
     std::unordered_map<Vertex, idxType> uniqueVertices{};
 
-    for (const auto& shape : shapes)
-    {
-        for (const auto& index : shape.mesh.indices)
-        {
+    for (const auto& shape : shapes) {
+        for (const auto& index : shape.mesh.indices) {
             Vertex vertex{};
             vertex.pos      = {attrib.vertices[3 * index.vertex_index + 0],
                                attrib.vertices[3 * index.vertex_index + 1],
@@ -56,8 +51,7 @@ void ModelFile::read()
             vertex.texCoord = {attrib.texcoords[2 * index.texcoord_index + 0],
                                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]};
             vertex.color    = {1.0f, 1.0f, 1.0f};
-            if (uniqueVertices.count(vertex) == 0)
-            {
+            if (uniqueVertices.count(vertex) == 0) {
                 uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
                 vertices.push_back(vertex);
             }
@@ -67,17 +61,14 @@ void ModelFile::read()
     }
 }
 
-void ModelFile::free()
-{
+void ModelFile::free() {
     vertices.clear();
     indices.clear();
 }
 
-bool ModelFile::checkPathValid()
-{
+bool ModelFile::checkPathValid() {
     bool ret = super::checkPathValid();
-    if (ret)
-    {
+    if (ret) {
         const std::string fileExt  = filePath.extension().string();
         bool              contains = false;
         auto              findExt  = [&fileExt, &contains](std::string& supExt) -> void {
@@ -89,11 +80,11 @@ bool ModelFile::checkPathValid()
     return ret;
 }
 
-void ModelFile::releaseOldFile()
-{
+void ModelFile::releaseOldFile() {
     free();
 }
 
-void ModelFile::prepareNewFile() {}
+void ModelFile::prepareNewFile() {
+}
 
 } // namespace TBE::Resource::File

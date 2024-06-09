@@ -4,7 +4,6 @@
 
 namespace TBE::Editor {
 using TBE::Editor::DelegateManager::KeyStateMap;
-using TBE::Editor::DelegateManager::DelegateIndexGetter;
 using TBE::Editor::DelegateManager::KeyBit;
 
 const std::unordered_map<ImGuiKey, KeyBit> keyCaptureList = {
@@ -41,7 +40,7 @@ void Editor::tickCPU() {
         }
     }
     if (keyMap != (KeyStateMap)KeyBit::eNull) { // key on capture list is pressed
-        boardcast(DelegateIndexGetter::get<KeyStateMap>(), keyMap);
+        boardcast(keyMap);
     }
 }
 

@@ -13,7 +13,7 @@ inline void checkResult(VkResult res) {
     handleVkResult((vk::Result)res);
 }
 
-Ui::Ui(ImGui_ImplVulkan_InitInfo imguiInfo, GLFWwindow *pWindow) {
+Ui::Ui(ImGui_ImplVulkan_InitInfo imguiInfo, GLFWwindow* pWindow) {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
@@ -46,4 +46,4 @@ void Ui::tickGPU(const vk::CommandBuffer& cmdBuffer) {
     ImGui_ImplVulkan_RenderDrawData(drawData, cmdBuffer);
 }
 
-} // namespace TBE::Ui
+} // namespace TBE::Editor::Ui

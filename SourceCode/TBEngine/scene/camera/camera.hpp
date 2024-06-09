@@ -6,13 +6,14 @@
 #include <memory>
 
 namespace TBE::Scene {
-using TBE::Editor::DelegateManager::KeyStateMap;
 using TBE::Editor::DelegateManager::KeyBit;
+using TBE::Editor::DelegateManager::KeyStateMap;
 
 class Scene;
 
 class Camera {
     friend class Scene;
+
 public:
     Camera();
 
@@ -23,9 +24,9 @@ public:
     void onKeyDown(KeyStateMap keyMap);
 
 private:
-    glm::vec3 pos   { 2.0f,  2.0f,  2.0f};
-    glm::vec3 front {-1.0f, -1.0f, -1.0f};
-    glm::vec3 up    { 0.0f,  0.0f,  1.0f};
+    glm::vec3 pos{2.0f, 2.0f, 2.0f};
+    glm::vec3 front{-1.0f, -1.0f, -1.0f};
+    glm::vec3 up{0.0f, 0.0f, 1.0f};
 
     float dirty       = true;
     float speed       = 0.05f;
