@@ -1,24 +1,16 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
 #include "TBEngine/resource/file/shader/shaderFile.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/descriptor/descriptor.hpp"
+#include "TBEngine/enums.hpp"
 
 #include <vector>
 #include <string>
 
-namespace TBE::Resource
-{
+namespace TBE::Resource {
 
-enum class ShaderType
-{
-    eUnknown = 0,
-    eVertex,
-    eFrag,
-};
-
-class Shader
-{
+class Shader {
 public:
     Shader();
     ~Shader();

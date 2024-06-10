@@ -1,17 +1,15 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/base/vulkanAbstractBase.hpp"
 
 #include <vector>
 #include <utility>
 
-namespace TBE::Graphics
-{
+namespace TBE::Graphics {
 using Utils::Log::logErrorMsg;
 
-class SwapchainResource : public VulkanAbstractBase
-{
+class SwapchainResource : public VulkanAbstractBase {
     using super = VulkanAbstractBase;
 
 public:

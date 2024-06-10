@@ -5,7 +5,6 @@
 #include "TBEngine/editor/editor.hpp"
 
 namespace TBE::Engine {
-using TBE::Editor::DelegateManager::KeyBit;
 using TBE::Editor::DelegateManager::KeyStateMap;
 
 class Engine {
@@ -17,9 +16,19 @@ public:
     void runLoop();
 
 private:
-    void init();
+    Window::Window           winForm;
+    Graphics::VulkanGraphics graphic;
+    Editor::Editor           editor;
+
+private:
+    bool shouldClose = false;
+
+private:
     void tick();
-    void exit();
+
+private:
+    void bindTickGPUFuncs();
+    void bindCallBackFuncs();
 
 private:
     void captureKeyInput(KeyStateMap keyMap) {
@@ -27,14 +36,6 @@ private:
             shouldClose = true;
         }
     }
-
-private:
-    Window::Window           winForm;
-    Graphics::VulkanGraphics graphic;
-    Editor::Editor           editor;
-
-private:
-    bool shouldClose = false;
 };
 
 } // namespace TBE::Engine

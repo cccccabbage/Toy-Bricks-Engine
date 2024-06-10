@@ -6,7 +6,6 @@
 
 namespace TBE::Resource {
 using namespace TBE::Utils::Log;
-using TBE::Graphics::ImageResourceType;
 using TBE::Graphics::StagingBuffer;
 
 Texture::Texture()

@@ -1,13 +1,13 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 #include <filesystem>
 
 namespace TBE::Resource::File {
 
 class FileBase {
 public:
-    FileBase(const std::string& filePath_) : filePath(filePath_), valid(checkPathValid()) {}
+    FileBase(std::string_view filePath_) : filePath(filePath_), valid(checkPathValid()) {}
     FileBase(const std::filesystem::path& filePath_)
         : filePath(filePath_), valid(checkPathValid()) {}
 
@@ -16,7 +16,7 @@ protected:
     bool                  valid{};
 
 public:
-    void newFile(const std::string& newPath) { newFile(std::filesystem::path(newPath)); }
+    void newFile(std::string_view newPath) { newFile(std::filesystem::path(newPath)); }
     void newFile(const std::filesystem::path newPath) {
         releaseOldFile();
         filePath = newPath;

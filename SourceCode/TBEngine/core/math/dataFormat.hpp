@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeGLM.hpp"
+#include "TBEngine/utils/includes/includeGLM.hpp"
 
 namespace TBE::Math::DataFormat {
 
@@ -25,7 +25,8 @@ struct UniformBufferObject {
 } // namespace TBE::Math::DataFormat
 
 namespace std {
-template <> struct hash<TBE::Math::DataFormat::Vertex> {
+template <>
+struct hash<TBE::Math::DataFormat::Vertex> {
     size_t operator()(TBE::Math::DataFormat::Vertex const& vertex) const {
         return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
                (hash<glm::vec2>()(vertex.texCoord) << 1);

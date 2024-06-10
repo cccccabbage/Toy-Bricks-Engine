@@ -108,24 +108,24 @@ void VulkanGraphics::tick() {
     vk::SubmitInfo         submitInfo{};
 
     submitInfo.setWaitSemaphores(waitSemaphores)
-              .setPWaitDstStageMask(waitStages)
-              .setCommandBuffers(cmdBuffer)
-              .setSignalSemaphores(signalSemaphores);
+        .setPWaitDstStageMask(waitStages)
+        .setCommandBuffers(cmdBuffer)
+        .setSignalSemaphores(signalSemaphores);
 
     handleVkResult(graphicsQueue.submit(submitInfo, fence));
 
     vk::SubpassDependency dependency{};
     dependency.setSrcSubpass(vk::SubpassExternal)
-              .setDstSubpass(0)
-              .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-              .setSrcAccessMask(vk::AccessFlagBits::eNone)
-              .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-              .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+        .setDstSubpass(0)
+        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+        .setSrcAccessMask(vk::AccessFlagBits::eNone)
+        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
 
     vk::PresentInfoKHR presentInfo{};
     presentInfo.setWaitSemaphores(signalSemaphores)
-               .setSwapchains(swapchainR.swapchain)
-               .setPImageIndices(&imageIndex);
+        .setSwapchains(swapchainR.swapchain)
+        .setPImageIndices(&imageIndex);
 
     result = presentQueue.presentKHR(presentInfo);
     if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
@@ -161,7 +161,9 @@ void VulkanGraphics::cleanup() {
     device.destroy(commandPool, nullptr); // command buffers are freed implicitly here.
 
     device.destroy(); // This would implicitly clean up the device queue.
-    if (inDebug) { instance.destroy(debugMessenger, nullptr); }
+    if (inDebug) {
+        instance.destroy(debugMessenger, nullptr);
+    }
     instance.destroy(surface);
     instance.destroy();
 }
@@ -196,32 +198,35 @@ void VulkanGraphics::createInstance() {
     };
     vk::ApplicationInfo appInfo{};
     appInfo.setPApplicationName("Toy Bricks Engine")
-           .setApplicationVersion(1)
-           .setPEngineName("No Engine")
-           .setEngineVersion(1)
-           .setApiVersion(VK_API_VERSION_1_0);
+        .setApplicationVersion(1)
+        .setPEngineName("No Engine")
+        .setEngineVersion(1)
+        .setApiVersion(VK_API_VERSION_1_0);
 
     auto extensions = getRequiredExtensions();
 
     vk::InstanceCreateInfo createInfo{};
-    createInfo.setPApplicationInfo(&appInfo)
-              .setEnabledLayerCount(0)
-              .setPEnabledExtensionNames(extensions);
+    createInfo.setPApplicationInfo(&appInfo).setEnabledLayerCount(0).setPEnabledExtensionNames(
+        extensions);
 
     auto dbgCreateInfo = genDebugCreateInfo();
-    if (inDebug) { createInfo.setPEnabledLayerNames(validationLayers).setPNext(&dbgCreateInfo); }
+    if (inDebug) {
+        createInfo.setPEnabledLayerNames(validationLayers).setPNext(&dbgCreateInfo);
+    }
 
     depackReturnValue(instance, vk::createInstance(createInfo));
 }
 
 void VulkanGraphics::createSurface() {
-    auto createInfo = vk::Win32SurfaceCreateInfoKHR().setHwnd(window.getWin32Window())
-                                                     .setHinstance(window.getModuleHandle());
+    auto createInfo = vk::Win32SurfaceCreateInfoKHR()
+                          .setHwnd(window.getWin32Window())
+                          .setHinstance(window.getModuleHandle());
     depackReturnValue(surface, instance.createWin32SurfaceKHR(createInfo));
 }
 
 void VulkanGraphics::setupDebugMessenger() {
-    if (!inDebug) return;
+    if (!inDebug)
+        return;
 
     auto createInfo = genDebugCreateInfo();
 
@@ -240,7 +245,9 @@ void VulkanGraphics::setupDebugMessenger() {
 void VulkanGraphics::pickPhysicalDevice() {
     std::vector<vk::PhysicalDevice> devices{};
     depackReturnValue(devices, instance.enumeratePhysicalDevices());
-    if (devices.size() == 0) { logErrorMsg("Failed to find GPUs with Vulkan support."); }
+    if (devices.size() == 0) {
+        logErrorMsg("Failed to find GPUs with Vulkan support.");
+    }
 
     for (const auto& phyDeivce_ : devices) {
         if (isDeviceSuitable(phyDeivce_)) {
@@ -250,7 +257,9 @@ void VulkanGraphics::pickPhysicalDevice() {
         }
     }
 
-    if (!phyDevice) { logErrorMsg("Failed to find suitable GPU."); }
+    if (!phyDevice) {
+        logErrorMsg("Failed to find suitable GPU.");
+    }
 }
 
 void VulkanGraphics::createExtent() {
@@ -269,8 +278,8 @@ void VulkanGraphics::createLogicalDevice() {
     for (auto queueFamily : uniqueQueueFamilies) {
         vk::DeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.setQueueFamilyIndex(queueFamily)
-                       .setQueueCount(1)
-                       .setPQueuePriorities(&queuePriority);
+            .setQueueCount(1)
+            .setPQueuePriorities(&queuePriority);
         queueCreateInfos.push_back(queueCreateInfo);
     }
     vk::PhysicalDeviceFeatures deviceFeatures{};
@@ -278,9 +287,9 @@ void VulkanGraphics::createLogicalDevice() {
 
     vk::DeviceCreateInfo createInfo{};
     createInfo.setFlags(vk::DeviceCreateFlags())
-              .setQueueCreateInfos(queueCreateInfos)
-              .setPEnabledExtensionNames(deviceExtensions)
-              .setPEnabledFeatures(&deviceFeatures);
+        .setQueueCreateInfos(queueCreateInfos)
+        .setPEnabledExtensionNames(deviceExtensions)
+        .setPEnabledFeatures(&deviceFeatures);
 
     depackReturnValue(device, phyDevice.createDevice(createInfo));
 
@@ -297,8 +306,8 @@ void VulkanGraphics::createRenderPass() {
 }
 
 void VulkanGraphics::createGraphicsPipeline() {
-    scene.addShader("Shaders/vert.spv", Resource::ShaderType::eVertex);
-    scene.addShader("Shaders/frag.spv", Resource::ShaderType::eFrag);
+    scene.addShader("Shaders/vert.spv", ShaderType::eVertex);
+    scene.addShader("Shaders/frag.spv", ShaderType::eFrag);
     auto shaderStages = scene.initDescriptorSetLayout();
 
     std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport,
@@ -312,11 +321,11 @@ void VulkanGraphics::createGraphicsPipeline() {
 
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.setVertexBindingDescriptions(bindingDescription)
-                   .setVertexAttributeDescriptions(attributeDescriptions);
+        .setVertexAttributeDescriptions(attributeDescriptions);
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList)
-                 .setPrimitiveRestartEnable(vk::False);
+        .setPrimitiveRestartEnable(vk::False);
 
     vk::Viewport viewport{
         0.0f,                 // x
@@ -338,17 +347,17 @@ void VulkanGraphics::createGraphicsPipeline() {
 
     vk::PipelineRasterizationStateCreateInfo rasterizer{};
     rasterizer.setDepthClampEnable(vk::False)
-              .setRasterizerDiscardEnable(vk::False)
-              .setPolygonMode(vk::PolygonMode::eFill)
-              .setLineWidth(1.0f)
-              .setCullMode(vk::CullModeFlagBits::eBack)
-              .setFrontFace(vk::FrontFace::eCounterClockwise)
-              .setDepthBiasEnable(vk::False);
+        .setRasterizerDiscardEnable(vk::False)
+        .setPolygonMode(vk::PolygonMode::eFill)
+        .setLineWidth(1.0f)
+        .setCullMode(vk::CullModeFlagBits::eBack)
+        .setFrontFace(vk::FrontFace::eCounterClockwise)
+        .setDepthBiasEnable(vk::False);
 
     vk::PipelineMultisampleStateCreateInfo multisampling{};
     multisampling.setSampleShadingEnable(vk::True)
-                 .setMinSampleShading(0.2f)
-                 .setRasterizationSamples(msaaSamples);
+        .setMinSampleShading(0.2f)
+        .setRasterizationSamples(msaaSamples);
 
     vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
     colorBlendAttachment
@@ -367,10 +376,10 @@ void VulkanGraphics::createGraphicsPipeline() {
 
     vk::PipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.setDepthTestEnable(vk::True)
-                .setDepthWriteEnable(vk::True)
-                .setDepthCompareOp(vk::CompareOp::eLess) // lower depth means closer
-                .setDepthBoundsTestEnable(vk::False)
-                .setStencilTestEnable(vk::False);
+        .setDepthWriteEnable(vk::True)
+        .setDepthCompareOp(vk::CompareOp::eLess) // lower depth means closer
+        .setDepthBoundsTestEnable(vk::False)
+        .setStencilTestEnable(vk::False);
 
     // define the uniform data that would be passed to shader
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -380,17 +389,17 @@ void VulkanGraphics::createGraphicsPipeline() {
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.setStages(shaderStages)
-                .setPVertexInputState(&vertexInputInfo)
-                .setPInputAssemblyState(&inputAssembly)
-                .setPViewportState(&viewportState)
-                .setPRasterizationState(&rasterizer)
-                .setPMultisampleState(&multisampling)
-                .setPColorBlendState(&colorBlending)
-                .setPDynamicState(&dynamicState)
-                .setLayout(pipelineLayout)
-                .setRenderPass(renderPass.renderPass)
-                .setSubpass(0)
-                .setPDepthStencilState(&depthStencil);
+        .setPVertexInputState(&vertexInputInfo)
+        .setPInputAssemblyState(&inputAssembly)
+        .setPViewportState(&viewportState)
+        .setPRasterizationState(&rasterizer)
+        .setPMultisampleState(&multisampling)
+        .setPColorBlendState(&colorBlending)
+        .setPDynamicState(&dynamicState)
+        .setLayout(pipelineLayout)
+        .setRenderPass(renderPass.renderPass)
+        .setSubpass(0)
+        .setPDepthStencilState(&depthStencil);
 
     std::vector<vk::Pipeline> grapPipes{};
     depackReturnValue(grapPipes, device.createGraphicsPipelines(nullptr, pipelineInfo));
@@ -403,15 +412,14 @@ void VulkanGraphics::createFramebuffers() {
     swapchainFramebuffers.resize(swapchainR.views.size());
 
     for (size_t i = 0; i < swapchainR.views.size(); i++) {
-        std::array attachments = {colorImageR.imageView,
-                                  depthImageR.imageView,
-                                  swapchainR.views[i]};
+        std::array attachments = {
+            colorImageR.imageView, depthImageR.imageView, swapchainR.views[i]};
         vk::FramebufferCreateInfo framebufferInfo{};
         framebufferInfo.setRenderPass(renderPass.renderPass)
-                       .setAttachments(attachments)
-                       .setWidth(extent.width)
-                       .setHeight(extent.height)
-                       .setLayers(1);
+            .setAttachments(attachments)
+            .setWidth(extent.width)
+            .setHeight(extent.height)
+            .setLayers(1);
 
         depackReturnValue(swapchainFramebuffers[i], device.createFramebuffer(framebufferInfo));
     }
@@ -422,7 +430,7 @@ void VulkanGraphics::createCommandPool() {
 
     vk::CommandPoolCreateInfo poolInfo{};
     poolInfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-            .setQueueFamilyIndex(indices.graphicsFamily.value());
+        .setQueueFamilyIndex(indices.graphicsFamily.value());
 
     depackReturnValue(commandPool, device.createCommandPool(poolInfo));
 }
@@ -490,8 +498,7 @@ void VulkanGraphics::cleanupSwapChain() {
     colorImageR.destroy();
     depthImageR.destroy();
 
-    for (size_t i = 0; i < swapchainFramebuffers.size(); i++)
-    {
+    for (size_t i = 0; i < swapchainFramebuffers.size(); i++) {
         device.destroy(swapchainFramebuffers[i]);
     }
 
@@ -548,20 +555,20 @@ void VulkanGraphics::recordCommandBuffer(vk::CommandBuffer cmdBuffer, uint32_t i
 
     vk::RenderPassBeginInfo renderPassInfo{};
     renderPassInfo.setRenderPass(renderPass.renderPass)
-                  .setFramebuffer(swapchainFramebuffers[imageIndex])
-                  .setRenderArea(renderArea)
-                  .setClearValues(clearValues);
+        .setFramebuffer(swapchainFramebuffers[imageIndex])
+        .setRenderArea(renderArea)
+        .setClearValues(clearValues);
     cmdBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
     cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
     vk::Viewport viewport{};
     viewport.setX(0.0f)
-            .setY(0.0f)
-            .setWidth(static_cast<float>(extent.width))
-            .setHeight(static_cast<float>(extent.height))
-            .setMinDepth(0.0f)
-            .setMaxDepth(1.0f);
+        .setY(0.0f)
+        .setWidth(static_cast<float>(extent.width))
+        .setHeight(static_cast<float>(extent.height))
+        .setMinDepth(0.0f)
+        .setMaxDepth(1.0f);
     cmdBuffer.setViewport(0, viewport);
 
     vk::Rect2D scissor{};
@@ -587,8 +594,8 @@ vk::Format VulkanGraphics::findDepthFormat() {
 void disposableCommands(std::function<void(vk::CommandBuffer&)> func) {
     vk::CommandBufferAllocateInfo allocInfo{};
     allocInfo.setLevel(vk::CommandBufferLevel::ePrimary)
-             .setCommandPool(VulkanGraphics::commandPool)
-             .setCommandBufferCount(1);
+        .setCommandPool(VulkanGraphics::commandPool)
+        .setCommandBufferCount(1);
 
     std::vector<vk::CommandBuffer> cmdBuffers{};
     depackReturnValue(cmdBuffers, VulkanGraphics::device.allocateCommandBuffers(allocInfo));
@@ -625,9 +632,9 @@ vkCreateDebugUtilsMessengerEXT(VkInstance                                instanc
     return pfnVkCreateDebugUtilsMessengerEXT(instance, pCreateInfo, pAllocator, pMessenger);
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
-    VkInstance                   instance,
-    VkDebugUtilsMessengerEXT     messenger,
-    VkAllocationCallbacks const* pAllocator) {
+VKAPI_ATTR void VKAPI_CALL
+vkDestroyDebugUtilsMessengerEXT(VkInstance                   instance,
+                                VkDebugUtilsMessengerEXT     messenger,
+                                VkAllocationCallbacks const* pAllocator) {
     return pfnVkDestroyDebugUtilsMessengerEXT(instance, messenger, pAllocator);
 }

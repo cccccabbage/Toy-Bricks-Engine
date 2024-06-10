@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
 
 #include "TBEngine/core/graphics/vulkanAbstract/imageResource/imageResource.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/swapchainResource/swapchainResource.hpp"

@@ -2,6 +2,7 @@
 #include "TBEngine/utils/log/log.hpp"
 #include "TBEngine/editor/editor.hpp"
 #include "TBEngine/settings.hpp"
+#include "TBEngine/enums.hpp"
 
 #include <any>
 
@@ -10,60 +11,23 @@ extern const TBE::Utils::Log::Logger* logger;
 namespace TBE::Engine {
 using namespace TBE::Editor;
 
-template<typename... Args>
+template <typename... Args>
 static std::any bindFuncToAny(Args...) {
     return std::make_any(std::function<void()>());
 }
 
-Engine::Engine() 
+Engine::Engine()
     : winForm({WINDOW_WIDTH, WINDOW_HEIGHT})
     , graphic(winForm)
     , editor(graphic.getImguiInfo(), winForm.getPWindow()) {
-    init();
+    winForm.setResizeFlag(graphic.getPFrameBufferResized());
+
+    bindTickGPUFuncs();
+    bindCallBackFuncs();
 }
 
 Engine::~Engine() {
-    exit();
-}
-
-void Engine::init() {
-    winForm.setResizeFlag(graphic.getPFrameBufferResized());
-
-    auto tickFunc = std::bind(&TBE::Editor::Editor::tickGPU, &editor, std::placeholders::_1);
-    graphic.bindTickCmdFunc(tickFunc);
-
-    std::vector<std::tuple<DelegateManager::InputType, std::any>> funcs {};
-    std::any func1 = std::function<void(KeyStateMap)>(
-        std::bind(&TBE::Engine::Engine::captureKeyInput, this, std::placeholders::_1));
-    funcs.push_back(std::make_tuple(DelegateManager::InputType::eKeyBoard, func1));
-    auto graphicFuncs = graphic.getBindFuncs();
-    for ( auto& typeFunc : graphicFuncs) {
-        funcs.push_back(typeFunc);
-    }
-
-    std::unordered_map<DelegateManager::InputType, uint32_t> delegateExsist {};
-    for(auto&[type, funcAny] : funcs){
-        if (auto it = delegateExsist.find(type); it == delegateExsist.end()){
-            delegateExsist[type] = editor.addDelegate(type);
-        }
-        switch(type) {
-            case DelegateManager::InputType::eMouseMove:
-                editor.bindFunc<uint32_t, uint32_t>(delegateExsist[type], funcAny);
-                break;
-            case DelegateManager::InputType::eMouseClick:
-                editor.bindFunc<bool>(delegateExsist[type], funcAny);
-                break;
-            case DelegateManager::InputType::eKeyBoard:
-                editor.bindFunc<KeyStateMap>(delegateExsist[type], funcAny);
-                break;
-            case DelegateManager::InputType::eUnknown:
-                Utils::Log::logErrorMsg("bad InputType");
-                break;
-            default:
-                Utils::Log::logErrorMsg("bad InputType");
-                break;
-        }
-    }
+    logger->trace("Exiting Engine.");
 }
 
 void Engine::runLoop() {
@@ -78,8 +42,44 @@ void Engine::runLoop() {
     logger->trace("End of draw loop.");
 }
 
-void Engine::exit() {
-    logger->trace("Exiting Engine.");
+void Engine::bindTickGPUFuncs() {
+    auto tickFunc = std::bind(&TBE::Editor::Editor::tickGPU, &editor, std::placeholders::_1);
+    graphic.bindTickCmdFunc(tickFunc);
+}
+
+void Engine::bindCallBackFuncs() {
+    std::vector<std::tuple<InputType, std::any>> funcs{};
+    std::any                                     func1 = std::function<void(KeyStateMap)>(
+        std::bind(&TBE::Engine::Engine::captureKeyInput, this, std::placeholders::_1));
+    funcs.push_back(std::make_tuple(InputType::eKeyBoard, func1));
+    auto graphicFuncs = graphic.getBindFuncs();
+    for (auto& typeFunc : graphicFuncs) {
+        funcs.push_back(typeFunc);
+    }
+
+    std::unordered_map<InputType, uint32_t> delegateExsist{};
+    for (auto& [type, funcAny] : funcs) {
+        if (auto it = delegateExsist.find(type); it == delegateExsist.end()) {
+            delegateExsist[type] = editor.addDelegate(type);
+        }
+        switch (type) {
+            case InputType::eMouseMove:
+                editor.bindFunc<uint32_t, uint32_t>(delegateExsist[type], funcAny);
+                break;
+            case InputType::eMouseClick:
+                editor.bindFunc<bool>(delegateExsist[type], funcAny);
+                break;
+            case InputType::eKeyBoard:
+                editor.bindFunc<KeyStateMap>(delegateExsist[type], funcAny);
+                break;
+            case InputType::eUnknown:
+                Utils::Log::logErrorMsg("bad InputType");
+                break;
+            default:
+                Utils::Log::logErrorMsg("bad InputType");
+                break;
+        }
+    }
 }
 
 void Engine::tick() {

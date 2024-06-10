@@ -6,6 +6,7 @@
 #include <tiny_obj_loader.h>
 #include <vector>
 #include <span>
+#include <string_view>
 
 namespace TBE::Resource::File {
 
@@ -13,7 +14,7 @@ class ModelFile : public FileBase {
     using super = FileBase;
 
 public:
-    ModelFile(const std::string filePath_ = "None");
+    ModelFile(std::string_view filePath_ = "None");
 
 private:
     std::vector<Math::DataFormat::Vertex>  vertices{};

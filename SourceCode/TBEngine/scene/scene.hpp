@@ -1,10 +1,11 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
 #include "TBEngine/resource/shader/shader.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/bufferResource/bufferResource.hpp"
 #include "model/model.hpp"
 #include "camera/camera.hpp"
+#include "TBEngine/enums.hpp"
 
 #include <vector>
 #include <string_view>
@@ -27,7 +28,7 @@ public:
     void destroy();
 
 public:
-    std::vector<std::tuple<TBE::Editor::DelegateManager::InputType, std::any>> getBindFuncs();
+    std::vector<std::tuple<InputType, std::any>> getBindFuncs();
 
 public:
     void tickCPU();
@@ -39,9 +40,7 @@ public: // model related
     void addModel(const __SceneAddModelArgs args = {});
 
 public: // shader related
-    void addShader(std::string filePath, Resource::ShaderType type) {
-        shader.addShader(filePath, type);
-    }
+    void addShader(std::string filePath, ShaderType type) { shader.addShader(filePath, type); }
 
     auto        initDescriptorSetLayout() { return shader.initDescriptorSetLayout(); }
     const auto& getDescriptorSetLayout() { return shader.descriptors.layout; }

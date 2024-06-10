@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
 #include "TBEngine/utils/log/log.hpp"
 #include "TBEngine/core/math/dataFormat.hpp"
 #include "TBEngine/core/window/window.hpp"
@@ -41,28 +41,37 @@ struct QueueFamilyIndices {
         auto queueFamilies = device.getQueueFamilyProperties();
         int  i             = 0;
         for (const auto& queueFamily : queueFamilies) {
-            if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) { graphicsFamily = i; }
+            if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+                graphicsFamily = i;
+            }
 
             vk::Bool32 value{};
             depackReturnValue(value, device.getSurfaceSupportKHR(i, surface));
-            if (value) { presentFamily = i; }
+            if (value) {
+                presentFamily = i;
+            }
 
-            if (isComplete()) break;
+            if (isComplete())
+                break;
             i++;
         }
-        if (!isComplete()) { logErrorMsg("Cannot find suitable queue families!"); }
+        if (!isComplete()) {
+            logErrorMsg("Cannot find suitable queue families!");
+        }
     }
 
     operator std::set<uint32_t>() {
         std::set<uint32_t> ret{};
-        if (isComplete()) ret = {graphicsFamily.value(), presentFamily.value()};
+        if (isComplete())
+            ret = {graphicsFamily.value(), presentFamily.value()};
         return std::move(ret);
     }
 
     operator std::array<uint32_t, 2>() const {
         std::array<uint32_t, 2> ret = {};
 
-        if (isComplete()) ret = {graphicsFamily.value(), presentFamily.value()};
+        if (isComplete())
+            ret = {graphicsFamily.value(), presentFamily.value()};
 
         return std::move(ret);
     }
@@ -94,7 +103,8 @@ inline bool checkValidationLayerSupport(const std::vector<const char*>& validati
                 break;
             }
         }
-        if (!layerFound) return false;
+        if (!layerFound)
+            return false;
     }
 
     return true;
@@ -103,7 +113,8 @@ inline bool checkValidationLayerSupport(const std::vector<const char*>& validati
 inline std::vector<const char*> getRequiredExtensions() {
     auto extensions = Window::getRequiredExtensions();
 
-    if (inDebug) extensions.push_back(vk::EXTDebugUtilsExtensionName);
+    if (inDebug)
+        extensions.push_back(vk::EXTDebugUtilsExtensionName);
 
     return extensions;
 }
@@ -131,7 +142,8 @@ inline bool checkDeviceExtensionSupport(const vk::PhysicalDevice&       device,
     auto                  reqSize = reqExts.size();
 
     for (const auto& extension : availableExtensions) {
-        if (reqExts.find(extension.extensionName) != reqExts.end()) reqSize--;
+        if (reqExts.find(extension.extensionName) != reqExts.end())
+            reqSize--;
     }
 
     return reqSize == 0;
@@ -151,7 +163,9 @@ chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availabelFormat
 inline vk::PresentModeKHR
 chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) {
     for (const auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == vk::PresentModeKHR::eMailbox) { return availablePresentMode; }
+        if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
+            return availablePresentMode;
+        }
     }
 
     return vk::PresentModeKHR::eFifo;
@@ -233,12 +247,24 @@ inline vk::SampleCountFlagBits getMaxUsableSampleCount(const vk::PhysicalDevice&
 
     vk::SampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts &
                                   physicalDeviceProperties.limits.framebufferDepthSampleCounts;
-    if (counts & vk::SampleCountFlagBits::e64) { return vk::SampleCountFlagBits::e64; };
-    if (counts & vk::SampleCountFlagBits::e32) { return vk::SampleCountFlagBits::e32; };
-    if (counts & vk::SampleCountFlagBits::e16) { return vk::SampleCountFlagBits::e16; };
-    if (counts & vk::SampleCountFlagBits::e8) { return vk::SampleCountFlagBits::e8; };
-    if (counts & vk::SampleCountFlagBits::e4) { return vk::SampleCountFlagBits::e4; };
-    if (counts & vk::SampleCountFlagBits::e2) { return vk::SampleCountFlagBits::e2; };
+    if (counts & vk::SampleCountFlagBits::e64) {
+        return vk::SampleCountFlagBits::e64;
+    };
+    if (counts & vk::SampleCountFlagBits::e32) {
+        return vk::SampleCountFlagBits::e32;
+    };
+    if (counts & vk::SampleCountFlagBits::e16) {
+        return vk::SampleCountFlagBits::e16;
+    };
+    if (counts & vk::SampleCountFlagBits::e8) {
+        return vk::SampleCountFlagBits::e8;
+    };
+    if (counts & vk::SampleCountFlagBits::e4) {
+        return vk::SampleCountFlagBits::e4;
+    };
+    if (counts & vk::SampleCountFlagBits::e2) {
+        return vk::SampleCountFlagBits::e2;
+    };
     return vk::SampleCountFlagBits::e1;
 }
 

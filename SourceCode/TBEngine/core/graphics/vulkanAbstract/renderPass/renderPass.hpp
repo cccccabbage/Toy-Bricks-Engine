@@ -1,12 +1,10 @@
 #pragma once
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/base/vulkanAbstractBase.hpp"
 
-namespace TBE::Graphics
-{
+namespace TBE::Graphics {
 
-class RenderPass : public VulkanAbstractBase
-{
+class RenderPass : public VulkanAbstractBase {
     using super = VulkanAbstractBase;
 
 public:

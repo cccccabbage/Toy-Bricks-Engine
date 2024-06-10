@@ -15,7 +15,7 @@ void Scene::destroy() {
     shader.destroy();
 }
 
-std::vector<std::tuple<TBE::Editor::DelegateManager::InputType, std::any>> Scene::getBindFuncs() {
+std::vector<std::tuple<InputType, std::any>> Scene::getBindFuncs() {
     std::any func1 = std::function<void(KeyStateMap)>(
         std::bind(&Camera::Camera::onKeyDown, &camera, std::placeholders::_1));
 

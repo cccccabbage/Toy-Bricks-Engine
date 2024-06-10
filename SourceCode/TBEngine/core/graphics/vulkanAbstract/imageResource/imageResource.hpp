@@ -1,21 +1,12 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/base/vulkanAbstractBase.hpp"
+#include "TBEngine/enums.hpp"
 
-namespace TBE::Graphics
-{
+namespace TBE::Graphics {
 
-enum class ImageResourceType
-{
-    eUnknown = 0,
-    eColor,
-    eDepth,
-    eTexture,
-};
-
-class ImageResource : public VulkanAbstractBase
-{
+class ImageResource : public VulkanAbstractBase {
 public:
     ImageResource() : VulkanAbstractBase() {}
     ~ImageResource();

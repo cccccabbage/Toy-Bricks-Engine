@@ -2,39 +2,13 @@
 
 #include "TBEngine/utils/delegate/delegate.hpp"
 #include "TBEngine/utils/log/log.hpp"
+#include "TBEngine/enums.hpp"
 
 #include <any>
 #include <unordered_map>
 
 namespace TBE::Editor::DelegateManager {
 using KeyStateMap = uint64_t;
-
-enum class InputType
-{
-    eUnknown,
-    eMouseMove,  // parameters are uint32_t for current x and uint32_t for current y
-    eMouseClick, // parameter is a bool, true for right click and false for left click
-    eKeyBoard,   // parameter is a KeyStateMap, for each bit of it means a key is down
-};
-
-// XXX: this enum class for keys has a limit of 64, needs to be imporved
-enum class KeyBit : uint64_t
-{
-    eNull      = 0x0000000000000000,
-    eEscape    = 0x0000000000000001,
-    eW         = eEscape << 1,
-    eA         = eW << 1,
-    eS         = eA << 1,
-    eD         = eS << 1,
-    eLeftCtrl  = eD << 1,
-    eSpace     = eLeftCtrl << 1,
-    eLeftShift = eSpace << 1,
-    eLeft      = eLeftShift << 1,
-    eRight     = eLeft << 1,
-    eUp        = eRight << 1,
-    eDown      = eUp << 1,
-    eR         = eDown << 1,
-};
 
 struct DelegateIndexGetter {
     template <typename... Args>

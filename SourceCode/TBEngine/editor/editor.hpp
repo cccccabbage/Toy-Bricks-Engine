@@ -2,7 +2,8 @@
 
 #include "ui/ui.hpp"
 #include "delegateManager/delegateManager.hpp"
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
+#include "TBEngine/enums.hpp"
 
 namespace TBE::Editor {
 

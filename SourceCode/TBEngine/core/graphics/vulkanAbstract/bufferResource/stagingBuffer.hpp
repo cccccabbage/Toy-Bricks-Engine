@@ -1,16 +1,14 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/base/vulkanAbstractBase.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/imageResource/imageResource.hpp"
 
 #include <functional>
 
-namespace TBE::Graphics
-{
+namespace TBE::Graphics {
 
-class StagingBuffer : public VulkanAbstractBase
-{
+class StagingBuffer : public VulkanAbstractBase {
 public:
     StagingBuffer() = delete;
     StagingBuffer(const std::span<std::byte>& inData);

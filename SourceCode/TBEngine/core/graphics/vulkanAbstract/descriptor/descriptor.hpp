@@ -1,17 +1,15 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/base/vulkanAbstractBase.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/bufferResource/bufferResource.hpp"
 
 #include <vector>
 #include <span>
 
-namespace TBE::Graphics
-{
+namespace TBE::Graphics {
 
-class Descriptor : public VulkanAbstractBase
-{
+class Descriptor : public VulkanAbstractBase {
     using super = VulkanAbstractBase;
 
 public:

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeGLM.hpp"
+#include "TBEngine/utils/includes/includeGLM.hpp"
 #include "TBEngine/editor/delegateManager/delegateManager.hpp"
 
 #include <memory>
 
 namespace TBE::Scene {
-using TBE::Editor::DelegateManager::KeyBit;
+// using TBE::Editor::DelegateManager::KeyBit;
 using TBE::Editor::DelegateManager::KeyStateMap;
 
 class Scene;

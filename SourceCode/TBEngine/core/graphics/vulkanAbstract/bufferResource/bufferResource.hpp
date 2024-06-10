@@ -1,16 +1,14 @@
 #pragma once
 
-#include "TBEngine/utils/macros/includeVulkan.hpp"
+#include "TBEngine/utils/includes/includeVulkan.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/base/vulkanAbstractBase.hpp"
 
 #include <span>
 #include <tuple>
 
-namespace TBE::Graphics
-{
+namespace TBE::Graphics {
 
-class BufferResource : public VulkanAbstractBase
-{
+class BufferResource : public VulkanAbstractBase {
 public:
     BufferResource() : VulkanAbstractBase() {}
     ~BufferResource();
@@ -38,8 +36,7 @@ protected:
                  vk::PhysicalDeviceMemoryProperties phyMemPro);
 };
 
-class BufferResourceUniform : public BufferResource
-{
+class BufferResourceUniform : public BufferResource {
 public:
     BufferResourceUniform() {}
     ~BufferResourceUniform();

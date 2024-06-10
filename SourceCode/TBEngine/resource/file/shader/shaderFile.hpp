@@ -2,7 +2,7 @@
 
 #include "TBEngine/resource/file/base/fileBase.hpp"
 
-#include <string>
+#include <string_view>
 #include <vector>
 
 namespace TBE::Resource::File {
@@ -11,7 +11,7 @@ class ShaderFile : public FileBase {
     using super = FileBase;
 
 public:
-    ShaderFile(const std::string filePath_);
+    ShaderFile(std::string_view filePath_);
 
 public:
     std::vector<char> read() const;

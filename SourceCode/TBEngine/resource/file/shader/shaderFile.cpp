@@ -9,7 +9,7 @@ namespace TBE::Resource::File {
 
 std::vector<std::string> ShaderFile::supportedShaderTypes = {};
 
-ShaderFile::ShaderFile(const std::string filePath_) : super(filePath_) {
+ShaderFile::ShaderFile(std::string_view filePath_) : super(filePath_) {
     if (supportedShaderTypes.empty()) {
         supportedShaderTypes.emplace_back(".spv");
     }

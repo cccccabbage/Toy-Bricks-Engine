@@ -16,7 +16,7 @@ using Math::DataFormat::Vertex;
 
 std::vector<std::string> ModelFile::supportedShaderTypes = {};
 
-ModelFile::ModelFile(const std::string filePath_) : super(filePath_) {
+ModelFile::ModelFile(std::string_view filePath_) : super(filePath_) {
     if (supportedShaderTypes.empty()) {
         supportedShaderTypes.emplace_back(".obj");
     }
