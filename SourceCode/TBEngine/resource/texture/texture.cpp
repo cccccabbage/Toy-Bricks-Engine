@@ -82,7 +82,7 @@ void Texture::read() {
 }
 
 void Texture::transitionImageLayout(__TextureTransitionImageLayoutArgs args) {
-    auto& [image, format, oldLayout, newLayout, miplevels] = args;
+    auto& [image, format, oldLayout, newLayout, mipLevels] = args;
     vk::ImageSubresourceRange subresourceRange{};
     subresourceRange.setBaseMipLevel(0).setLevelCount(mipLevels).setBaseArrayLayer(0).setLayerCount(
         1);
