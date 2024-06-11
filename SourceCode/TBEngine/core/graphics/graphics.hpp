@@ -6,6 +6,7 @@
 #include "TBEngine/core/graphics/vulkanAbstract/swapchainResource/swapchainResource.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/renderPass/renderPass.hpp"
 #include "TBEngine/scene/scene.hpp"
+#include "interface/shaderInterface/shaderInterface.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_vulkan.h>
@@ -103,6 +104,9 @@ private:
 
     uint32_t currentFrame       = 0;
     bool     framebufferResized = false;
+
+public:
+    static ShaderInterface shaderInterface;
 
 public:
     static vk::Instance       instance;

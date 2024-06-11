@@ -34,11 +34,12 @@ void Scene::tickGPU(const vk::CommandBuffer& cmdBuffer, const vk::PipelineLayout
     std::array<vk::DeviceSize, vertexBuffers.size()> offsets       = {0};
     cmdBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
     cmdBuffer.bindIndexBuffer(getIdxBuffer(0), 0, vk::IndexType::eUint32);
-    cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                                 layout,
-                                 0,
-                                 shader.descriptors.sets[currentFrame],
-                                 static_cast<uint32_t>(0));
+    cmdBuffer.bindDescriptorSets(
+        vk::PipelineBindPoint::eGraphics,
+        layout,
+        0,
+        Graphics::VulkanGraphics::shaderInterface.descriptors.sets[currentFrame],
+        static_cast<uint32_t>(0));
     cmdBuffer.drawIndexed(static_cast<uint32_t>(getIdxSize(0)), 1, 0, 0, 0);
 }
 
@@ -82,6 +83,30 @@ void Scene::read() {
 
 void Scene::addModel(std::string_view modelPath, std::string_view texturePath) {
     modelManager.init(modelPath, texturePath, true);
+}
+
+const std::vector<vk::PipelineShaderStageCreateInfo> Scene::initDescriptorSetLayout() {
+    return Graphics::VulkanGraphics::shaderInterface.initDescriptorSetLayout();
+}
+
+const vk::DescriptorSetLayout& Scene::getDescriptorSetLayout() {
+    return Graphics::VulkanGraphics::shaderInterface.descriptors.layout;
+}
+
+void Scene::destroyShaderCache() {
+    Graphics::VulkanGraphics::shaderInterface.destroyCache();
+}
+
+void Scene::initDescriptorPool(uint32_t                                maxSets,
+                               const std::span<vk::DescriptorPoolSize> poolSizes) {
+    Graphics::VulkanGraphics::shaderInterface.descriptors.initPool(maxSets, poolSizes);
+}
+
+void Scene::initDescriptorSets(const std::span<Graphics::BufferResourceUniform> uniBuffers,
+                               const vk::Sampler&                               sampler,
+                               const vk::ImageView&                             sampleTarget) {
+    Graphics::VulkanGraphics::shaderInterface.descriptors.initSets(
+        uniBuffers, sampler, sampleTarget);
 }
 
 } // namespace TBE::Scene

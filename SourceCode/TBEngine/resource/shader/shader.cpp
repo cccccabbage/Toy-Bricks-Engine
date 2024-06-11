@@ -1,129 +1,52 @@
 #include "shader.hpp"
 #include "TBEngine/core/graphics/graphics.hpp"
+#include "TBEngine/core/graphics/interface/shaderInterface/shaderInterface.hpp"
 
-namespace TBE::Resource
-{
+namespace TBE::Resource {
 using namespace TBE::Utils::Log;
 using File::ShaderFile;
 
-Shader::Shader()
-    : device(Graphics::VulkanGraphics::device)
-    , phyDevice(Graphics::VulkanGraphics::phyDevice)
-    , descriptors()
-{
+ShaderManager::ShaderManager() {
 }
 
-Shader::~Shader()
-{
+ShaderManager::~ShaderManager() {
     destroy();
 }
 
-void Shader::destroy()
-{
-    destroyCache();
-    if (descInited)
-    {
-        descriptors.destroy();
-        descInited = false;
+void ShaderManager::destroy() {
+    static bool destroyed = false;
+    if (!destroyed) {
+        destroyed = true;
     }
 }
 
-void Shader::destroyCache()
-{
-    if (modulesInited)
-    {
-        if (!modules.empty())
-        {
-            for (auto& module : modules)
-            {
-                device.destroy(module);
-            }
-            modules.clear();
-        }
-        modulesInited = false;
-    }
-    if (stageInfosInited)
-    {
-        stageInfos.clear();
-        stageInfosInited = false;
-    }
-    if (bindingsInited)
-    {
-        bindings.clear();
-        bindingsInited = false;
-    }
-}
+void ShaderManager::addShader(std::string filePath, ShaderType type) {
+    auto& [shaderFile, _] =
+        shaderFiles.emplace_back(std::move(std::make_pair(ShaderFile(filePath), type)));
 
-void Shader::addShader(std::string filePath, ShaderType type)
-{
-    ShaderFile shaderFile{filePath};
+    Graphics::VulkanGraphics::shaderInterface.addShader(shaderFile.read(), type);
 
-    auto shaderCode = shaderFile.read();
-    modules.emplace_back(createShaderModule(shaderCode));
-    modulesInited = true;
-
-    vk::PipelineShaderStageCreateInfo shaderStageInfo{{}, {}, modules.back(), "main"};
-    switch (type)
-    {
-        case ShaderType::eVertex: shaderStageInfo.setStage(vk::ShaderStageFlagBits::eVertex); break;
-        case ShaderType::eFrag: shaderStageInfo.setStage(vk::ShaderStageFlagBits::eFragment); break;
-        case ShaderType::eUnknown:
-        default: logErrorMsg("illegal ShaderType"); break;
-    }
-    stageInfos.emplace_back(shaderStageInfo);
-    stageInfosInited = true;
-
-    bindings.emplace_back(createBinding(type));
-    bindingsInited = true;
-}
-
-vk::ShaderModule Shader::createShaderModule(const std::vector<char>& code)
-{
-    vk::ShaderModuleCreateInfo createInfo{};
-    createInfo.setCodeSize(code.size()).setPCode(reinterpret_cast<const uint32_t*>(code.data()));
-
-    vk::ShaderModule shaderModule{};
-    depackReturnValue(shaderModule, device.createShaderModule(createInfo));
-
-    return std::move(shaderModule);
-}
-
-const std::vector<vk::PipelineShaderStageCreateInfo> Shader::initDescriptorSetLayout()
-{
-    if (stageInfos.empty() || bindings.empty())
-    {
-        logger->warn("call for empty shaderStageInfos or bindings");
-    }
-    if (!bindings.empty())
-    {
-        descriptors.initLayout(bindings);
-        descInited = true;
-    }
-    return stageInfos;
-}
-
-vk::DescriptorSetLayoutBinding Shader::createBinding(ShaderType type)
-{
-    vk::DescriptorSetLayoutBinding binding{};
-    switch (type)
-    {
-        case ShaderType::eVertex:
-            binding.setBinding(0)
-                .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-                .setDescriptorCount(1)
-                .setStageFlags(vk::ShaderStageFlagBits::eVertex);
-            break;
-        case ShaderType::eFrag:
-            binding.setBinding(1)
-                .setDescriptorCount(1)
-                .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-                .setPImmutableSamplers(nullptr)
-                .setStageFlags(vk::ShaderStageFlagBits::eFragment);
-            break;
-        case ShaderType::eUnknown:
-        default: logErrorMsg("illegal ShaderType"); break;
-    }
-    return std::move(binding);
+    // ShaderFile shaderFile{filePath};
+    //
+    // auto shaderCode = shaderFile.read();
+    // modules.emplace_back(createShaderModule(shaderCode));
+    //
+    // vk::PipelineShaderStageCreateInfo shaderStageInfo{{}, {}, modules.back(), "main"};
+    // switch (type) {
+    //     case ShaderType::eVertex:
+    //         shaderStageInfo.setStage(vk::ShaderStageFlagBits::eVertex);
+    //         break;
+    //     case ShaderType::eFrag:
+    //         shaderStageInfo.setStage(vk::ShaderStageFlagBits::eFragment);
+    //         break;
+    //     case ShaderType::eUnknown:
+    //     default:
+    //         logErrorMsg("illegal ShaderType");
+    //         break;
+    // }
+    // stageInfos.emplace_back(shaderStageInfo);
+    //
+    // bindings.emplace_back(createBinding(type));
 }
 
 } // namespace TBE::Resource
