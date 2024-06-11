@@ -4,32 +4,44 @@
 
 namespace TBE::Scene::Model {
 
-void Model::init(__ModelInitArgs args) {
-    modelFile.newFile(args.modelPath);
+size_t ModelManager::init(std::string_view modelPath, std::string_view texturePath, bool slowRead) {
+    auto& modelFile = modelFiles.emplace_back();
+    modelFile.newFile(modelPath);
     if (!modelFile.isValid()) {
         Utils::Log::logErrorMsg("invalid file path for model");
     }
-    textureFile.init(args.texturePath, args.slowRead);
+
+    auto& textureFile = textureFiles.emplace_back();
+    textureFile.init(texturePath, slowRead);
     if (!textureFile.file.isValid()) {
         Utils::Log::logErrorMsg("invalid file path for texture");
     }
 
-    if (!args.slowRead) {
-        read();
+    auto idx = modelFiles.size() - 1;
+    if (!slowRead) {
+        read(idx);
     }
+
+    return idx;
 }
 
-void Model::destroy() {
-    textureFile.destroy();
-    modelFile.free();
-    vertBuf.destroy();
-    idxBuf.destroy();
+void ModelManager::destroy() {
+    textureFiles.clear();
+    modelFiles.clear();
+    // vertBuf.destroy();
+    // idxBuf.destroy();
+    vertBufs.clear();
+    idxBufs.clear();
 }
 
-void Model::read() {
+void ModelManager::read(size_t idx) {
+    auto& modelFile   = modelFiles[idx];
+    auto& textureFile = textureFiles[idx];
     modelFile.read();
     textureFile.read();
 
+    auto& vertBuf = vertBufs.emplace_back();
+    auto& idxBuf  = idxBufs.emplace_back();
     vertBuf.init(modelFile.getVerticesByte(),
                  vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
                  vk::MemoryPropertyFlagBits::eDeviceLocal);

@@ -14,15 +14,6 @@
 
 namespace TBE::Scene {
 
-struct __SceneAddModelArgs {
-    std::string_view modelPath   = nullptr;
-    std::string_view texturePath = nullptr;
-};
-
-} // namespace TBE::Scene
-
-namespace TBE::Scene {
-
 class Scene {
 public:
     void destroy();
@@ -37,7 +28,7 @@ public:
 public: // model related
     // call addModel(...) for all the models needed to read before call read();
     void read();
-    void addModel(const __SceneAddModelArgs args = {});
+    void addModel(std::string_view modelPath, std::string_view texturePath);
 
 public: // shader related
     void addShader(std::string filePath, ShaderType type) { shader.addShader(filePath, type); }
@@ -55,11 +46,11 @@ public: // shader related
     }
 
 public:
-    auto& getTextureSampler(int idx = -1) { return models[idx].getTextureSampler(); }
-    auto& getTextureImageView(int idx = -1) { return models[idx].getTextureImageView(); }
-    auto& getVertBuffer(int idx = -1) { return models[idx].getVertBuffer(); }
-    auto& getIdxBuffer(int idx = -1) { return models[idx].getIdxBuffer(); }
-    auto  getIdxSize(int idx = -1) { return models[idx].getIdxSize(); }
+    auto& getTextureSampler(uint32_t idx) { return modelManager.getTextureSampler(idx); }
+    auto& getTextureImageView(uint32_t idx) { return modelManager.getTextureImageView(idx); }
+    auto& getVertBuffer(uint32_t idx) { return modelManager.getVertBuffer(idx); }
+    auto& getIdxBuffer(uint32_t idx) { return modelManager.getIdxBuffer(idx); }
+    auto  getIdxSize(uint32_t idx) { return modelManager.getIdxSize(idx); }
 
     std::span<Graphics::BufferResourceUniform> getUniformBufferRs() { return uniformBufferRs; }
 
@@ -68,7 +59,7 @@ public:
 
 private:
     Camera                                       camera{};
-    std::vector<Model::Model>                    models{};
+    Model::ModelManager                          modelManager{};
     std::vector<Graphics::BufferResourceUniform> uniformBufferRs{};
     uint32_t                                     currentFrame = 0;
 

@@ -448,8 +448,7 @@ void VulkanGraphics::createDepthResources() {
 }
 
 void VulkanGraphics::loadModel() {
-    scene.addModel({.modelPath   = "Resources/Models/viking_room.obj",
-                    .texturePath = "Resources/Textures/viking_room.png"});
+    scene.addModel("Resources/Models/viking_room.obj", "Resources/Textures/viking_room.png");
     scene.read();
 }
 

@@ -7,7 +7,7 @@ namespace TBE::Scene {
 using namespace TBE::Editor::DelegateManager;
 
 void Scene::destroy() {
-    std::for_each(models.begin(), models.end(), [](Model::Model& model) { model.destroy(); });
+    modelManager.destroy();
     std::for_each(uniformBufferRs.begin(),
                   uniformBufferRs.end(),
                   [](Graphics::BufferResourceUniform& buffer) { buffer.destroy(); });
@@ -63,10 +63,12 @@ void Scene::updateUniformBuffer() {
 }
 
 void Scene::read() {
-    if (models.empty()) {
+    if (modelManager.empty()) {
         logger->warn("Try to read but no model has been prepared");
     }
-    std::for_each(models.begin(), models.end(), [](Model::Model& model) { model.read(); });
+    for (size_t i = 0; i < modelManager.size(); i++) {
+        modelManager.read(i);
+    }
 
     vk::DeviceSize bufferSize = sizeof(Math::DataFormat::UniformBufferObject);
     uniformBufferRs.resize(MAX_FRAMES_IN_FLIGHT);
@@ -78,10 +80,8 @@ void Scene::read() {
                   });
 }
 
-void Scene::addModel(const __SceneAddModelArgs args) {
-    models.emplace_back();
-    models.back().init(
-        {.modelPath = args.modelPath, .texturePath = args.texturePath, .slowRead = true});
+void Scene::addModel(std::string_view modelPath, std::string_view texturePath) {
+    modelManager.init(modelPath, texturePath, true);
 }
 
 } // namespace TBE::Scene

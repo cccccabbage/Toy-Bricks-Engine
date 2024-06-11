@@ -5,42 +5,37 @@
 #include "TBEngine/core/graphics/vulkanAbstract/bufferResource/bufferResource.hpp"
 
 #include <string_view>
-
-namespace TBE::Scene {
-
-struct __ModelInitArgs { // args of Model::Init
-    // use like this: model.init({.modelPath = "xxx", .texturePath="xxx", .slowRead=false});
-    // do not create a specific object for this struct
-    std::string_view modelPath   = nullptr;
-    std::string_view texturePath = nullptr;
-    bool             slowRead    = false;
-};
-
-} // namespace TBE::Scene
+#include <vector>
 
 namespace TBE::Scene::Model {
 
-class Model {
+// manager for all the model and texture files
+// maintain a table for the map between models and textures
+class ModelManager {
 public:
-    void init(__ModelInitArgs args = {});
-    void destroy();
+    size_t init(std::string_view modelPath, std::string_view texturePath, bool slowRead);
+    void   destroy();
 
 public:
-    void read();
+    void   read(size_t idx);
+    bool   empty() { return modelFiles.empty(); }
+    size_t size() { return modelFiles.size(); }
 
 public:
-    const auto& getVertBuffer() { return vertBuf.buffer; }
-    const auto& getIdxBuffer() { return idxBuf.buffer; }
-    auto        getIdxSize() { return modelFile.getIndices().size(); }
-    const auto& getTextureSampler() { return textureFile.sampler; }
-    const auto& getTextureImageView() { return textureFile.imageR.imageView; }
+    const auto& getVertBuffer(uint32_t idx) { return vertBufs[idx].buffer; }
+    const auto& getIdxBuffer(uint32_t idx) { return idxBufs[idx].buffer; }
+    const auto& getTextureSampler(uint32_t idx) { return textureFiles[idx].sampler; }
+    const auto& getTextureImageView(uint32_t idx) { return textureFiles[idx].imageR.imageView; }
 
+    const auto getIdxSize(uint32_t idx) { return modelFiles[idx].getIndices().size(); }
 
 private:
-    Resource::File::ModelFile modelFile{};
-    Resource::Texture         textureFile{};
-    Graphics::BufferResource  vertBuf{};
-    Graphics::BufferResource  idxBuf{};
+    std::vector<Resource::File::ModelFile> modelFiles{};
+    std::vector<Resource::Texture>         textureFiles{};
+
+    // TODO: remove these two
+    std::vector<Graphics::BufferResource> vertBufs{};
+    std::vector<Graphics::BufferResource> idxBufs{};
 };
 
 } // namespace TBE::Scene::Model
