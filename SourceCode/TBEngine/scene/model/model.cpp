@@ -13,8 +13,8 @@ size_t ModelManager::init(std::string_view modelPath, std::string_view texturePa
     }
 
     auto& textureFile = textureFiles.emplace_back();
-    textureFile.init(texturePath, slowRead);
-    if (!textureFile.file.isValid()) {
+    textureFile.newFile(texturePath);
+    if (!textureFile.isValid()) {
         Utils::Log::logErrorMsg("invalid file path for texture");
     }
 
@@ -29,8 +29,6 @@ size_t ModelManager::init(std::string_view modelPath, std::string_view texturePa
 void ModelManager::destroy() {
     textureFiles.clear();
     modelFiles.clear();
-    // vertBuf.destroy();
-    // idxBuf.destroy();
     vertBufs.clear();
     idxBufs.clear();
 }
@@ -39,7 +37,7 @@ void ModelManager::read(size_t idx) {
     auto& modelFile   = modelFiles[idx];
     auto& textureFile = textureFiles[idx];
     modelFile.read();
-    textureFile.read();
+    Graphics::VulkanGraphics::textureInterface.read(textureFile.read());
 
     auto& vertBuf = vertBufs.emplace_back();
     auto& idxBuf  = idxBufs.emplace_back();
@@ -55,15 +53,16 @@ void ModelManager::read(size_t idx) {
 const vk::Buffer& ModelManager::getVertBuffer(uint32_t idx) {
     return vertBufs[idx].buffer;
 }
+
 const vk::Buffer& ModelManager::getIdxBuffer(uint32_t idx) {
     return idxBufs[idx].buffer;
 }
+
 const vk::Sampler& ModelManager::getTextureSampler(uint32_t idx) {
-    // return textureFiles[idx].sampler;
     return Graphics::VulkanGraphics::textureInterface.sampler;
 }
+
 const vk::ImageView& ModelManager::getTextureImageView(uint32_t idx) {
-    // return textureFiles[idx].imageR.imageView;
     return Graphics::VulkanGraphics::textureInterface.imageR.imageView;
 }
 

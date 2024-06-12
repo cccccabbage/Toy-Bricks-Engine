@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TBEngine/resource/file/model/modelFile.hpp"
-#include "TBEngine/resource/texture/texture.hpp"
+#include "TBEngine/resource/file/texture/textureFile.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/bufferResource/bufferResource.hpp"
 
 #include <string_view>
@@ -30,10 +30,9 @@ public:
     const auto getIdxSize(uint32_t idx) { return modelFiles[idx].getIndices().size(); }
 
 private:
-    std::vector<Resource::File::ModelFile> modelFiles{};
-    std::vector<Resource::Texture>         textureFiles{};
+    std::vector<Resource::File::ModelFile>   modelFiles{};
+    std::vector<Resource::File::TextureFile> textureFiles{};
 
-    // TODO: remove these two
     std::vector<Graphics::BufferResource> vertBufs{};
     std::vector<Graphics::BufferResource> idxBufs{};
 };

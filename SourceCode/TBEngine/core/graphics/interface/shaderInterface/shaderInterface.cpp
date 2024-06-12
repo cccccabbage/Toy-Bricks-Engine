@@ -1,5 +1,4 @@
 #include "shaderInterface.hpp"
-#include "TBEngine/core/graphics/graphics.hpp"
 
 namespace TBE::Graphics {
 using namespace TBE::Utils::Log;
