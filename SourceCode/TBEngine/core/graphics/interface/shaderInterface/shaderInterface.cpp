@@ -4,10 +4,7 @@
 namespace TBE::Graphics {
 using namespace TBE::Utils::Log;
 
-ShaderInterface::ShaderInterface()
-    : device(Graphics::VulkanGraphics::device)
-    , phyDevice(Graphics::VulkanGraphics::phyDevice)
-    , descriptors() {
+ShaderInterface::ShaderInterface() : super(), descriptors() {
 }
 
 ShaderInterface::~ShaderInterface() {

@@ -3,12 +3,13 @@
 #include "TBEngine/utils/includes/includeVulkan.hpp"
 #include "TBEngine/enums.hpp"
 #include "TBEngine/core/graphics/vulkanAbstract/descriptor/descriptor.hpp"
+#include "TBEngine/core/graphics/interface/base/graphicsInterface.hpp"
 
 #include <vector>
 
 namespace TBE::Graphics {
 
-class ShaderInterface final {
+class ShaderInterface final : public GraphicsInterface {
 public:
     ShaderInterface();
     ~ShaderInterface();
@@ -31,18 +32,11 @@ public:
     Graphics::Descriptor                           descriptors;
 
 private:
-    bool modulesInited    = false;
-    bool stageInfosInited = false;
-    bool bindingsInited   = false;
-    bool descInited       = false;
-
-private:
-    const vk::Device&         device;
-    const vk::PhysicalDevice& phyDevice;
-
-private:
     [[nodiscard]] vk::ShaderModule               createShaderModule(const std::vector<char>& code);
     [[nodiscard]] vk::DescriptorSetLayoutBinding createBinding(ShaderType type);
+
+private:
+    using super = GraphicsInterface;
 };
 
 } // namespace TBE::Graphics

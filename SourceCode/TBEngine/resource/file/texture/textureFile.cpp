@@ -29,7 +29,7 @@ TextureFile::TextureFile(const std::string& filePath_)
 TextureFile::TextureFile(const char* filePath_) : TextureFile(std::string(filePath_)) {
 }
 
-const TextureContent* TextureFile::read() {
+TextureContent* TextureFile::read() {
     if (texContent.pixels)
         return &texContent;
 
@@ -46,10 +46,7 @@ const TextureContent* TextureFile::read() {
 }
 
 void TextureFile::free() {
-    if (texContent.pixels) {
-        stbi_image_free(texContent.pixels);
-        texContent = {};
-    }
+    texContent.free();
 }
 
 bool TextureFile::checkPathValid() {

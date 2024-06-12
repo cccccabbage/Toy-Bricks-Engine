@@ -1,5 +1,6 @@
 #include "model.hpp"
 #include "TBEngine/utils/log/log.hpp"
+#include "TBEngine/core/graphics/graphics.hpp"
 
 
 namespace TBE::Scene::Model {
@@ -49,6 +50,21 @@ void ModelManager::read(size_t idx) {
     idxBuf.init(modelFile.getIndicesByte(),
                 vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
                 vk::MemoryPropertyFlagBits::eDeviceLocal);
+}
+
+const vk::Buffer& ModelManager::getVertBuffer(uint32_t idx) {
+    return vertBufs[idx].buffer;
+}
+const vk::Buffer& ModelManager::getIdxBuffer(uint32_t idx) {
+    return idxBufs[idx].buffer;
+}
+const vk::Sampler& ModelManager::getTextureSampler(uint32_t idx) {
+    // return textureFiles[idx].sampler;
+    return Graphics::VulkanGraphics::textureInterface.sampler;
+}
+const vk::ImageView& ModelManager::getTextureImageView(uint32_t idx) {
+    // return textureFiles[idx].imageR.imageView;
+    return Graphics::VulkanGraphics::textureInterface.imageR.imageView;
 }
 
 } // namespace TBE::Scene::Model

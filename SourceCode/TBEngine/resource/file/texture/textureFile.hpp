@@ -15,6 +15,13 @@ struct TextureContent {
     int      texHeight{};
     int      texWidth{};
     int      texChannel{};
+
+    inline void free() {
+        if (pixels) {
+            stbi_image_free(pixels);
+            *this = {};
+        }
+    }
 };
 
 class TextureFile : public FileBase {
@@ -26,8 +33,8 @@ public:
     TextureFile(const char* filePaht_ = "");
 
 public:
-    const TextureContent* read();
-    void                  free();
+    TextureContent* read();
+    void            free();
 
 private:
     TextureContent texContent{};

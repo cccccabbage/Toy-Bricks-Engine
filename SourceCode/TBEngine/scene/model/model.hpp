@@ -22,10 +22,10 @@ public:
     size_t size() { return modelFiles.size(); }
 
 public:
-    const auto& getVertBuffer(uint32_t idx) { return vertBufs[idx].buffer; }
-    const auto& getIdxBuffer(uint32_t idx) { return idxBufs[idx].buffer; }
-    const auto& getTextureSampler(uint32_t idx) { return textureFiles[idx].sampler; }
-    const auto& getTextureImageView(uint32_t idx) { return textureFiles[idx].imageR.imageView; }
+    const vk::Buffer&    getVertBuffer(uint32_t idx);
+    const vk::Buffer&    getIdxBuffer(uint32_t idx);
+    const vk::Sampler&   getTextureSampler(uint32_t idx);
+    const vk::ImageView& getTextureImageView(uint32_t idx);
 
     const auto getIdxSize(uint32_t idx) { return modelFiles[idx].getIndices().size(); }
 

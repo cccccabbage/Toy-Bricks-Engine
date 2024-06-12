@@ -7,6 +7,7 @@
 #include "TBEngine/core/graphics/vulkanAbstract/renderPass/renderPass.hpp"
 #include "TBEngine/scene/scene.hpp"
 #include "interface/shaderInterface/shaderInterface.hpp"
+#include "interface/textureInterface/textureInterface.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_vulkan.h>
@@ -106,7 +107,8 @@ private:
     bool     framebufferResized = false;
 
 public:
-    static ShaderInterface shaderInterface;
+    static ShaderInterface  shaderInterface;
+    static TextureInterface textureInterface;
 
 public:
     static vk::Instance       instance;

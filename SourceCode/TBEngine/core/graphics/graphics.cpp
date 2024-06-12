@@ -23,14 +23,15 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(VkInstance           
 
 namespace TBE::Graphics { // VulkanGraphics
 using namespace TBE::Graphics::Detail;
-vk::Instance       VulkanGraphics::instance        = {};
-vk::PhysicalDevice VulkanGraphics::phyDevice       = {};
-vk::Device         VulkanGraphics::device          = {};
-vk::SurfaceKHR     VulkanGraphics::surface         = {};
-vk::CommandPool    VulkanGraphics::commandPool     = {};
-vk::Queue          VulkanGraphics::graphicsQueue   = {};
-vk::Extent2D       VulkanGraphics::extent          = {{WINDOW_WIDTH, WINDOW_HEIGHT}};
-ShaderInterface    VulkanGraphics::shaderInterface = {};
+vk::Instance       VulkanGraphics::instance         = {};
+vk::PhysicalDevice VulkanGraphics::phyDevice        = {};
+vk::Device         VulkanGraphics::device           = {};
+vk::SurfaceKHR     VulkanGraphics::surface          = {};
+vk::CommandPool    VulkanGraphics::commandPool      = {};
+vk::Queue          VulkanGraphics::graphicsQueue    = {};
+vk::Extent2D       VulkanGraphics::extent           = {{WINDOW_WIDTH, WINDOW_HEIGHT}};
+ShaderInterface    VulkanGraphics::shaderInterface  = {};
+TextureInterface   VulkanGraphics::textureInterface = {};
 
 
 VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_) {
@@ -148,6 +149,8 @@ void VulkanGraphics::cleanup() {
     cleanupSwapChain();
 
     scene.destroy();
+    shaderInterface.destroy();
+    textureInterface.destroy();
 
     device.destroy(graphicsPipeline);
     device.destroy(pipelineLayout);
