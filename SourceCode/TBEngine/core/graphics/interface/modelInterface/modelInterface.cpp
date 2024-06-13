@@ -8,7 +8,10 @@ void ModelInterface::destroy() {
     idxBufs.clear();
 }
 
-void ModelInterface::read(const std::span<std::byte> vertices, const std::span<std::byte> indices) {
+void ModelInterface::read(const std::span<std::byte> vertices,
+                          const std::span<std::byte> indices,
+                          const size_t               idxSize) {
+    idxSizes.emplace_back(idxSize);
     auto& vertBuf = vertBufs.emplace_back();
     auto& idxBuf  = idxBufs.emplace_back();
     vertBuf.init(vertices,
@@ -34,6 +37,10 @@ const vk::Sampler& ModelInterface::getTextureSampler(uint32_t idx) {
 
 const vk::ImageView& ModelInterface::getTextureImageView(uint32_t idx) {
     return Graphics::VulkanGraphics::textureInterface.imageR.imageView;
+}
+
+const size_t ModelInterface::getIdxSize(uint32_t idx) {
+    return idxSizes[idx];
 }
 
 

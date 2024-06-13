@@ -9,6 +9,7 @@
 #include "interface/shaderInterface/shaderInterface.hpp"
 #include "interface/textureInterface/textureInterface.hpp"
 #include "interface/modelInterface/modelInterface.hpp"
+#include "interface/sceneInterface/sceneInterface.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_vulkan.h>
@@ -111,6 +112,7 @@ public:
     static ShaderInterface  shaderInterface;
     static TextureInterface textureInterface;
     static ModelInterface   modelInterface;
+    static SceneInterface   sceneInterface;
 
 public:
     static vk::Instance       instance;

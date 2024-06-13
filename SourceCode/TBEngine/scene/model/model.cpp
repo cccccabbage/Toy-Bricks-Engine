@@ -36,8 +36,8 @@ void ModelManager::read(size_t idx) {
     auto& textureFile = textureFiles[idx];
 
     modelFile.read();
-    Graphics::VulkanGraphics::modelInterface.read(modelFile.getVerticesByte(),
-                                                  modelFile.getIndicesByte());
+    Graphics::VulkanGraphics::modelInterface.read(
+        modelFile.getVerticesByte(), modelFile.getIndicesByte(), modelFile.getIndices().size());
     Graphics::VulkanGraphics::textureInterface.read(textureFile.read());
 }
 

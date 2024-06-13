@@ -33,14 +33,17 @@ vk::Extent2D       VulkanGraphics::extent           = {{WINDOW_WIDTH, WINDOW_HEI
 ShaderInterface    VulkanGraphics::shaderInterface  = {};
 TextureInterface   VulkanGraphics::textureInterface = {};
 ModelInterface     VulkanGraphics::modelInterface   = {};
+SceneInterface     VulkanGraphics::sceneInterface   = {};
 
 
 VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_) {
     logger->trace("Initializing graphic.");
     initVulkan();
 
+    // auto sceneTickFunc =
+    //     std::bind(&Scene::Scene::tickGPU, &scene, std::placeholders::_1, pipelineLayout);
     auto sceneTickFunc =
-        std::bind(&Scene::Scene::tickGPU, &scene, std::placeholders::_1, pipelineLayout);
+        std::bind(&SceneInterface::tickGPU, &sceneInterface, std::placeholders::_1, pipelineLayout);
     bindTickCmdFunc(sceneTickFunc);
 
     logger->trace("Graphic initialized.");
@@ -153,6 +156,7 @@ void VulkanGraphics::cleanup() {
     shaderInterface.destroy();
     textureInterface.destroy();
     modelInterface.destroy();
+    sceneInterface.destroy();
 
     device.destroy(graphicsPipeline);
     device.destroy(pipelineLayout);
@@ -314,7 +318,7 @@ void VulkanGraphics::createRenderPass() {
 void VulkanGraphics::createGraphicsPipeline() {
     scene.addShader("Shaders/vert.spv", ShaderType::eVertex);
     scene.addShader("Shaders/frag.spv", ShaderType::eFrag);
-    auto shaderStages = scene.initDescriptorSetLayout();
+    auto shaderStages = sceneInterface.initDescriptorSetLayout();
 
     std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport,
                                                    vk::DynamicState::eScissor};
@@ -389,7 +393,7 @@ void VulkanGraphics::createGraphicsPipeline() {
 
     // define the uniform data that would be passed to shader
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.setSetLayouts(scene.getDescriptorSetLayout());
+    pipelineLayoutInfo.setSetLayouts(sceneInterface.getDescriptorSetLayout());
 
     depackReturnValue(pipelineLayout, device.createPipelineLayout(pipelineLayoutInfo));
 
@@ -467,9 +471,10 @@ void VulkanGraphics::createDescriptor() {
         .setType(vk::DescriptorType::eCombinedImageSampler)
         .setDescriptorCount(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT));
 
-    scene.initDescriptorPool(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT), poolSizes);
-    scene.initDescriptorSets(
-        scene.getUniformBufferRs(), scene.getTextureSampler(0), scene.getTextureImageView(0));
+    sceneInterface.initDescriptorPool(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT), poolSizes);
+    sceneInterface.initDescriptorSets(sceneInterface.getUniformBufferRs(),
+                                      sceneInterface.getTextureSampler(0),
+                                      sceneInterface.getTextureImageView(0));
 }
 
 void VulkanGraphics::createCommandBuffers() {
