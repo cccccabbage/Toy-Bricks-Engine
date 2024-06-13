@@ -4,7 +4,7 @@
 
 namespace TBE::Math::DataFormat {
 
-using idxType = uint32_t;
+using IdxType = uint32_t;
 
 struct Vertex {
     glm::vec3 pos{};

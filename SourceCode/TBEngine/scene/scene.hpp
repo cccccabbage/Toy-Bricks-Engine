@@ -42,12 +42,12 @@ public: // shader related
                             const vk::ImageView&                             sampleTarget);
 
 public:
-    auto& getTextureSampler(uint32_t idx) { return modelManager.getTextureSampler(idx); }
-    auto& getTextureImageView(uint32_t idx) { return modelManager.getTextureImageView(idx); }
-    auto& getVertBuffer(uint32_t idx) { return modelManager.getVertBuffer(idx); }
-    auto& getIdxBuffer(uint32_t idx) { return modelManager.getIdxBuffer(idx); }
-    auto  getIdxSize(uint32_t idx) { return modelManager.getIdxSize(idx); }
+    const vk::Sampler&   getTextureSampler(uint32_t idx);
+    const vk::ImageView& getTextureImageView(uint32_t idx);
+    const vk::Buffer&    getVertBuffer(uint32_t idx);
+    const vk::Buffer&    getIdxBuffer(uint32_t idx);
 
+    auto getIdxSize(uint32_t idx) { return modelManager.getIdxSize(idx); }
     std::span<Graphics::BufferResourceUniform> getUniformBufferRs() { return uniformBufferRs; }
 
 public:

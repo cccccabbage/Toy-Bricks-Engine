@@ -18,7 +18,7 @@ public:
 
 private:
     std::vector<Math::DataFormat::Vertex>  vertices{};
-    std::vector<Math::DataFormat::idxType> indices{};
+    std::vector<Math::DataFormat::IdxType> indices{};
 
 public:
     void                       read();

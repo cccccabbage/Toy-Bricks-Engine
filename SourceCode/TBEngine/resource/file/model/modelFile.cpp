@@ -11,7 +11,7 @@
 
 namespace TBE::Resource::File {
 
-using Math::DataFormat::idxType;
+using Math::DataFormat::IdxType;
 using Math::DataFormat::Vertex;
 
 std::vector<std::string> ModelFile::supportedShaderTypes = {};
@@ -40,7 +40,7 @@ void ModelFile::read() {
         throw std::runtime_error(msg);
     }
 
-    std::unordered_map<Vertex, idxType> uniqueVertices{};
+    std::unordered_map<Vertex, IdxType> uniqueVertices{};
 
     for (const auto& shape : shapes) {
         for (const auto& index : shape.mesh.indices) {

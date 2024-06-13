@@ -82,7 +82,7 @@ void Scene::read() {
 }
 
 void Scene::addModel(std::string_view modelPath, std::string_view texturePath) {
-    modelManager.init(modelPath, texturePath, true);
+    auto idx = modelManager.add(modelPath, texturePath, true);
 }
 
 const std::vector<vk::PipelineShaderStageCreateInfo> Scene::initDescriptorSetLayout() {
@@ -107,6 +107,22 @@ void Scene::initDescriptorSets(const std::span<Graphics::BufferResourceUniform> 
                                const vk::ImageView&                             sampleTarget) {
     Graphics::VulkanGraphics::shaderInterface.descriptors.initSets(
         uniBuffers, sampler, sampleTarget);
+}
+
+const vk::Sampler& Scene::getTextureSampler(uint32_t idx) {
+    return Graphics::VulkanGraphics::modelInterface.getTextureSampler(idx);
+}
+
+const vk::ImageView& Scene::getTextureImageView(uint32_t idx) {
+    return Graphics::VulkanGraphics::modelInterface.getTextureImageView(idx);
+}
+
+const vk::Buffer& Scene::getVertBuffer(uint32_t idx) {
+    return Graphics::VulkanGraphics::modelInterface.getVertBuffer(idx);
+}
+
+const vk::Buffer& Scene::getIdxBuffer(uint32_t idx) {
+    return Graphics::VulkanGraphics::modelInterface.getIdxBuffer(idx);
 }
 
 } // namespace TBE::Scene

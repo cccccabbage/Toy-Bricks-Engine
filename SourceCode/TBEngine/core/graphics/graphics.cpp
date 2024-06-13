@@ -32,6 +32,7 @@ vk::Queue          VulkanGraphics::graphicsQueue    = {};
 vk::Extent2D       VulkanGraphics::extent           = {{WINDOW_WIDTH, WINDOW_HEIGHT}};
 ShaderInterface    VulkanGraphics::shaderInterface  = {};
 TextureInterface   VulkanGraphics::textureInterface = {};
+ModelInterface     VulkanGraphics::modelInterface   = {};
 
 
 VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_) {
@@ -151,6 +152,7 @@ void VulkanGraphics::cleanup() {
     scene.destroy();
     shaderInterface.destroy();
     textureInterface.destroy();
+    modelInterface.destroy();
 
     device.destroy(graphicsPipeline);
     device.destroy(pipelineLayout);

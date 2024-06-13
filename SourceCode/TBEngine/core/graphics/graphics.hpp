@@ -8,6 +8,7 @@
 #include "TBEngine/scene/scene.hpp"
 #include "interface/shaderInterface/shaderInterface.hpp"
 #include "interface/textureInterface/textureInterface.hpp"
+#include "interface/modelInterface/modelInterface.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_vulkan.h>
@@ -109,6 +110,7 @@ private:
 public:
     static ShaderInterface  shaderInterface;
     static TextureInterface textureInterface;
+    static ModelInterface   modelInterface;
 
 public:
     static vk::Instance       instance;
