@@ -46,11 +46,6 @@ private:
                      vk::ImageTiling         tiling,
                      vk::ImageUsageFlags     usage,
                      vk::ImageAspectFlags    aspectFlags);
-
-private:
-    bool imageInited  = false;
-    bool viewInited   = false;
-    bool memoryInited = false;
 };
 
 } // namespace TBE::Graphics

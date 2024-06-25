@@ -17,9 +17,6 @@ public:
 
 public:
     vk::RenderPass renderPass{};
-
-private:
-    bool inited = false;
 };
 
 } // namespace TBE::Graphics

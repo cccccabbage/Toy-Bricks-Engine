@@ -3,39 +3,29 @@
 #include "TBEngine/core/graphics/vulkanAbstract/bufferResource/stagingBuffer.hpp"
 #include "TBEngine/core/graphics/graphics.hpp"
 
-namespace TBE::Graphics
-{
+namespace TBE::Graphics {
 using namespace TBE::Graphics::Detail;
 using TBE::Utils::Log::logErrorMsg;
 
-BufferResource::~BufferResource()
-{
+BufferResource::~BufferResource() {
     destroy();
 }
 
-void BufferResource::destroy()
-{
-    if (bufferInited)
-    {
+void BufferResource::destroy() {
+    static bool destroyed = false;
+    if (!destroyed) {
         device.destroy(buffer);
-        bufferInited = false;
-    }
-    if (memoryInited)
-    {
         device.free(memory);
-        memoryInited = false;
+        destroyed = true;
     }
 }
 
 void BufferResource::init(const std::span<std::byte>& inData,
                           vk::BufferUsageFlags        usage,
-                          vk::MemoryPropertyFlags     memPro)
-{
+                          vk::MemoryPropertyFlags     memPro) {
     size = inData.size();
 
     std::tie(buffer, memory) = createBuffer(size, usage, memPro, phyDevice.getMemoryProperties());
-    bufferInited             = true;
-    memoryInited             = true;
 
     StagingBuffer stagingBuffer{inData};
 
@@ -51,8 +41,7 @@ std::tuple<vk::Buffer, vk::DeviceMemory>
 BufferResource::createBuffer(vk::DeviceSize                     size,
                              vk::BufferUsageFlags               usage,
                              vk::MemoryPropertyFlags            memPro,
-                             vk::PhysicalDeviceMemoryProperties phyMemPro)
-{
+                             vk::PhysicalDeviceMemoryProperties phyMemPro) {
     vk::Buffer       buffer{};
     vk::DeviceMemory bufferMemory{};
 
@@ -74,28 +63,21 @@ BufferResource::createBuffer(vk::DeviceSize                     size,
     return std::make_tuple(std::move(buffer), std::move(bufferMemory));
 }
 
-BufferResourceUniform::~BufferResourceUniform()
-{
+BufferResourceUniform::~BufferResourceUniform() {
     destroy();
 }
 
-void BufferResourceUniform::destroy()
-{
-    if (bufferInited)
-    {
+void BufferResourceUniform::destroy() {
+    static bool destroyed = false;
+    if (!destroyed) {
         device.destroy(buffer);
-        bufferInited = false;
-    }
-    if (memoryInited)
-    {
         device.free(memory);
-        memoryInited = false;
+        destroyed = true;
     }
 }
 
 void BufferResourceUniform::init(vk::DeviceSize                            size,
-                                 const vk::PhysicalDeviceMemoryProperties& phyMemPro)
-{
+                                 const vk::PhysicalDeviceMemoryProperties& phyMemPro) {
     bufferSize = size;
 
     std::tie(buffer, memory) = createBuffer(bufferSize,
@@ -103,15 +85,14 @@ void BufferResourceUniform::init(vk::DeviceSize                            size,
                                             vk::MemoryPropertyFlagBits::eHostVisible |
                                                 vk::MemoryPropertyFlagBits::eHostCoherent,
                                             phyMemPro);
-    bufferInited             = true;
-    memoryInited             = true;
 
     depackReturnValue(mapPtr, device.mapMemory(memory, 0, bufferSize));
 }
 
-void BufferResourceUniform::update(const std::span<std::byte>& newData)
-{
-    if (newData.size() != bufferSize) { logErrorMsg("uniform buffer size not compatible"); }
+void BufferResourceUniform::update(const std::span<std::byte>& newData) {
+    if (newData.size() != bufferSize) {
+        logErrorMsg("uniform buffer size not compatible");
+    }
     std::memcpy(mapPtr, newData.data(), bufferSize);
 }
 

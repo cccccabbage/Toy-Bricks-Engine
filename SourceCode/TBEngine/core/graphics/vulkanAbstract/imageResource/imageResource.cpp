@@ -7,25 +7,24 @@ namespace TBE::Graphics {
 using TBE::Utils::Log::logErrorMsg;
 using namespace TBE::Graphics::Detail;
 
-ImageResource::~ImageResource() { destroy(); }
+ImageResource::~ImageResource() {
+    destroy();
+}
 
 void ImageResource::destroy() {
-    if (viewInited) {
+    static bool destroyed = false;
+    if (!destroyed) {
         device.destroy(imageView);
-        viewInited = false;
-    }
-    if (imageInited) {
         device.destroy(image);
-        imageInited = false;
-    }
-    if (memoryInited) {
         device.free(memory);
-        memoryInited = false;
+        destroyed = true;
     }
 }
 
 void ImageResource::init(ImageResourceType imgType) {
-    if (width == 0 || height == 0) { logErrorMsg("Image width or height not inited"); }
+    if (width == 0 || height == 0) {
+        logErrorMsg("Image width or height not inited");
+    }
 
     vk::ImageCreateInfo     imgInfo{};
     vk::ImageViewCreateInfo viewInfo{};
@@ -63,7 +62,9 @@ void ImageResource::init(ImageResourceType imgType) {
                                                            vk::ImageAspectFlagBits::eColor);
             break;
         case ImageResourceType::eUnknown:
-        default: logErrorMsg("illeagal ImageResourceType"); break;
+        default:
+            logErrorMsg("illeagal ImageResourceType");
+            break;
     }
 
     init(imgInfo,
@@ -72,7 +73,9 @@ void ImageResource::init(ImageResourceType imgType) {
          vk::MemoryPropertyFlagBits::eDeviceLocal);
 }
 
-void ImageResource::setFormat(vk::Format format_) { format = format_; }
+void ImageResource::setFormat(vk::Format format_) {
+    format = format_;
+}
 
 void ImageResource::setWH(uint32_t width_, uint32_t height_) {
     width  = width_;
@@ -88,18 +91,15 @@ void ImageResource::createBuffer(const vk::PhysicalDeviceMemoryProperties& memPr
 
     depackReturnValue(memory, device.allocateMemory(allocInfo));
     handleVkResult(device.bindImageMemory(image, memory, 0));
-    memoryInited = true;
 }
 
 void ImageResource::createImageView(vk::ImageViewCreateInfo& viewInfo) {
     viewInfo.setImage(image);
     depackReturnValue(imageView, device.createImageView(viewInfo));
-    viewInited = true;
 }
 
 void ImageResource::createImage(const vk::ImageCreateInfo& imageInfo) {
     depackReturnValue(image, device.createImage(imageInfo));
-    imageInited = true;
 }
 
 void ImageResource::init(const vk::ImageCreateInfo&                imageInfo,

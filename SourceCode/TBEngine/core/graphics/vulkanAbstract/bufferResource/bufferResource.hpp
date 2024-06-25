@@ -25,10 +25,6 @@ public:
     vk::DeviceSize   size{};
 
 protected:
-    bool bufferInited = false;
-    bool memoryInited = false;
-
-protected:
     [[nodiscard]] std::tuple<vk::Buffer, vk::DeviceMemory>
     createBuffer(vk::DeviceSize                     size,
                  vk::BufferUsageFlags               usage,

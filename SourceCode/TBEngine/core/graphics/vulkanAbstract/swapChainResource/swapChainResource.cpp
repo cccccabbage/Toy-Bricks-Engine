@@ -2,44 +2,35 @@
 #include "TBEngine/core/graphics/detail/graphicsDetail.hpp"
 #include "TBEngine/core/graphics/graphics.hpp"
 
-namespace TBE::Graphics
-{
+namespace TBE::Graphics {
 using namespace TBE::Graphics::Detail;
 
-SwapchainResource::SwapchainResource() : super(), surface(VulkanGraphics::surface) {}
+SwapchainResource::SwapchainResource() : super(), surface(VulkanGraphics::surface) {
+}
 
-SwapchainResource::~SwapchainResource()
-{
+SwapchainResource::~SwapchainResource() {
     destroy();
 }
 
-void SwapchainResource::destroy()
-{
-    if (viewInited)
-    {
-        for (size_t i = 0; i < views.size(); i++)
-        {
+void SwapchainResource::destroy() {
+    static bool destroyed = false;
+    if (!destroyed) {
+        for (size_t i = 0; i < views.size(); i++) {
             device.destroy(views[i]);
         }
-        viewInited = false;
-    }
-    if (swapchainInited)
-    {
         device.destroy(swapchain);
-        swapchainInited = false;
+        destroyed = true;
     }
 }
 
 void SwapchainResource::init(const vk::PhysicalDevice&            phyDevice,
-                             const std::pair<uint32_t, uint32_t>& bufferSize)
-{
+                             const std::pair<uint32_t, uint32_t>& bufferSize) {
     createSwapChain(bufferSize);
     createImages();
     createViews();
 }
 
-void SwapchainResource::createSwapChain(const std::pair<uint32_t, uint32_t>& bufferSize)
-{
+void SwapchainResource::createSwapChain(const std::pair<uint32_t, uint32_t>& bufferSize) {
     auto swapChainSupport = SwapChainSupportDetails(phyDevice, surface);
     auto surfaceFormat    = chooseSwapSurfaceFormat(swapChainSupport.formats);
     auto presentMode      = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -47,8 +38,7 @@ void SwapchainResource::createSwapChain(const std::pair<uint32_t, uint32_t>& buf
 
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
     if (swapChainSupport.capabilities.maxImageCount > 0 &&
-        imageCount > swapChainSupport.capabilities.maxImageCount)
-    {
+        imageCount > swapChainSupport.capabilities.maxImageCount) {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
@@ -64,13 +54,10 @@ void SwapchainResource::createSwapChain(const std::pair<uint32_t, uint32_t>& buf
     auto                    indices            = QueueFamilyIndices(phyDevice, surface);
     std::array<uint32_t, 2> queueFamilyIndices = indices;
 
-    if (indices.graphicsFamily != indices.presentFamily)
-    {
+    if (indices.graphicsFamily != indices.presentFamily) {
         createInfo.setImageSharingMode(vk::SharingMode::eConcurrent)
             .setQueueFamilyIndices(queueFamilyIndices);
-    }
-    else
-    {
+    } else {
         createInfo.setImageSharingMode(vk::SharingMode::eExclusive)
             .setQueueFamilyIndices({}); // should this be a "{}" here, if I want to pass no indices?
     }
@@ -82,22 +69,17 @@ void SwapchainResource::createSwapChain(const std::pair<uint32_t, uint32_t>& buf
         .setOldSwapchain(nullptr);
 
     depackReturnValue(swapchain, device.createSwapchainKHR(createInfo));
-    swapchainInited = true;
 
     format = surfaceFormat.format;
 }
 
-void SwapchainResource::createImages()
-{
+void SwapchainResource::createImages() {
     depackReturnValue(images, device.getSwapchainImagesKHR(swapchain));
-    imageInited = true;
 }
 
-void SwapchainResource::createViews()
-{
+void SwapchainResource::createViews() {
     views.resize(images.size());
-    for (size_t i = 0; i < images.size(); i++)
-    {
+    for (size_t i = 0; i < images.size(); i++) {
         vk::ImageViewCreateInfo viewInfo{};
         viewInfo.setImage(images[i]).setViewType(vk::ImageViewType::e2D).setFormat(format);
         viewInfo.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor)
@@ -108,7 +90,6 @@ void SwapchainResource::createViews()
 
         depackReturnValue(views[i], device.createImageView(viewInfo));
     }
-    viewInited = true;
 }
 
 } // namespace TBE::Graphics

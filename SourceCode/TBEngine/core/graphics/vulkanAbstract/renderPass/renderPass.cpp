@@ -4,7 +4,9 @@
 namespace TBE::Graphics {
 using namespace TBE::Graphics::Detail;
 
-RenderPass::~RenderPass() { destroy(); }
+RenderPass::~RenderPass() {
+    destroy();
+}
 
 void RenderPass::init(vk::Format              swapchainFormat,
                       vk::Format              depthFormat,
@@ -81,13 +83,13 @@ void RenderPass::init(vk::Format              swapchainFormat,
         .setDependencies(dependency);
 
     depackReturnValue(renderPass, device.createRenderPass(renderPassInfo));
-    inited = true;
 }
 
 void RenderPass::destroy() {
-    if (inited) {
+    static bool destroyed = false;
+    if (!destroyed) {
         device.destroy(renderPass);
-        inited = false;
+        destroyed = true;
     }
 }
 

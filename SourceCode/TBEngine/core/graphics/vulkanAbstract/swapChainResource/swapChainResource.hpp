@@ -33,11 +33,6 @@ public:
 
 private:
     const vk::SurfaceKHR& surface;
-
-private:
-    bool swapchainInited = false;
-    bool imageInited     = false;
-    bool viewInited      = false;
 };
 
 } // namespace TBE::Graphics
