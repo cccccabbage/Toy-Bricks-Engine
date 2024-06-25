@@ -29,11 +29,6 @@ public:
     vk::DescriptorPool             pool{};
     vk::DescriptorSetLayout        layout{};
     std::vector<vk::DescriptorSet> sets{};
-
-private:
-    bool poolInited   = false;
-    bool layoutInited = false;
-    bool setsInited   = false;
 };
 
 } // namespace TBE::Graphics
