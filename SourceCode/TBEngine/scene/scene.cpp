@@ -6,11 +6,6 @@
 namespace TBE::Scene {
 using namespace TBE::Editor::DelegateManager;
 
-void Scene::destroy() {
-    modelManager.destroy();
-    shaderManager.destroy();
-}
-
 std::vector<std::tuple<InputType, std::any>> Scene::getBindFuncs() {
     std::any func1 = std::function<void(KeyStateMap)>(
         std::bind(&Camera::Camera::onKeyDown, &camera, std::placeholders::_1));
@@ -55,8 +50,8 @@ void Scene::read() {
     Graphics::VulkanGraphics::sceneInterface.initUniformBuffer();
 }
 
-void Scene::addModel(std::string_view modelPath, std::string_view texturePath) {
-    auto idx = modelManager.add(modelPath, texturePath, true);
+size_t Scene::addModel(std::string_view modelPath, std::string_view texturePath) {
+    return modelManager.add(modelPath, texturePath, true);
 }
 
 } // namespace TBE::Scene

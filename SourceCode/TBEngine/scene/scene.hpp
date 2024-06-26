@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TBEngine/resource/shader/shader.hpp"
+#include "shader/shader.hpp"
 #include "model/model.hpp"
 #include "camera/camera.hpp"
 #include "TBEngine/enums.hpp"
@@ -14,18 +14,15 @@ namespace TBE::Scene {
 
 class Scene {
 public:
-    void destroy();
-
-public:
     std::vector<std::tuple<InputType, std::any>> getBindFuncs();
 
 public:
     void tickCPU();
 
 public: // model related
-    // call addModel(...) for all the models needed to read before call read();
-    void read();
-    void addModel(std::string_view modelPath, std::string_view texturePath);
+    // call addModel(...) for all the models needed to read before calling read();
+    void   read();
+    size_t addModel(std::string_view modelPath, std::string_view texturePath);
 
 public: // shader related
     void addShader(std::string filePath, ShaderType type) {

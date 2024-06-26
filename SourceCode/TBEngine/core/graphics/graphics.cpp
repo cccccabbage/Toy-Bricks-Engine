@@ -40,10 +40,6 @@ VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_) {
     logger->trace("Initializing graphic.");
     initVulkan();
 
-    auto sceneTickFunc =
-        std::bind(&SceneInterface::tickGPU, &sceneInterface, std::placeholders::_1, pipelineLayout);
-    bindTickCmdFunc(sceneTickFunc);
-
     logger->trace("Graphic initialized.");
 }
 
@@ -72,10 +68,6 @@ void VulkanGraphics::initVulkan() {
 
     createCommandBuffers();
     createSyncObjects();
-
-    createGraphicsPipeline();
-    loadModel();
-    createDescriptor();
 }
 
 void VulkanGraphics::tick() {
@@ -97,8 +89,6 @@ void VulkanGraphics::tick() {
     } else if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
         logErrorMsg("failed to acquire swap chain image!");
     }
-
-    scene.tickCPU();
 
     device.resetFences(fence);
 
@@ -150,7 +140,6 @@ void VulkanGraphics::cleanup() {
 
     cleanupSwapChain();
 
-    scene.destroy();
     shaderInterface.destroy();
     textureInterface.destroy();
     modelInterface.destroy();
@@ -182,6 +171,15 @@ bool* VulkanGraphics::getPFrameBufferResized() {
 
 void VulkanGraphics::bindTickCmdFunc(std::function<void(const vk::CommandBuffer&)> func) {
     tickCmdFuncs.emplace_back(func);
+}
+
+void VulkanGraphics::initSceneInterface() {
+    createGraphicsPipeline();
+    createDescriptor();
+
+    auto sceneTickFunc =
+        std::bind(&SceneInterface::tickGPU, &sceneInterface, std::placeholders::_1, pipelineLayout);
+    bindTickCmdFunc(sceneTickFunc);
 }
 
 ImGui_ImplVulkan_InitInfo VulkanGraphics::getImguiInfo() {
@@ -314,8 +312,7 @@ void VulkanGraphics::createRenderPass() {
 }
 
 void VulkanGraphics::createGraphicsPipeline() {
-    scene.addShader("Shaders/vert.spv", ShaderType::eVertex);
-    scene.addShader("Shaders/frag.spv", ShaderType::eFrag);
+    // shader loading is managed by TBEngine, in engine.cpp
     auto shaderStages = shaderInterface.initDescriptorSetLayout();
 
     std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport,
@@ -455,12 +452,6 @@ void VulkanGraphics::createDepthResources() {
     depthImageR.init(ImageResourceType::eDepth);
 }
 
-void VulkanGraphics::loadModel() {
-    scene.addModel("Resources/Models/viking_room.obj", "Resources/Textures/viking_room.png");
-    scene.read();
-}
-
-// TODO: move this function to somewhere else
 void VulkanGraphics::createDescriptor() {
     std::array<vk::DescriptorPoolSize, 2> poolSizes{};
     poolSizes[0]

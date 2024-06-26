@@ -22,6 +22,9 @@ Engine::Engine()
     , editor(graphic.getImguiInfo(), winForm.getPWindow()) {
     winForm.setResizeFlag(graphic.getPFrameBufferResized());
 
+    loadScene();
+    graphic.initSceneInterface();
+
     bindTickGPUFuncs();
     bindCallBackFuncs();
 }
@@ -52,7 +55,7 @@ void Engine::bindCallBackFuncs() {
     std::any                                     func1 = std::function<void(KeyStateMap)>(
         std::bind(&TBE::Engine::Engine::captureKeyInput, this, std::placeholders::_1));
     funcs.push_back(std::make_tuple(InputType::eKeyBoard, func1));
-    auto graphicFuncs = graphic.getBindFuncs();
+    auto graphicFuncs = scene.getBindFuncs();
     for (auto& typeFunc : graphicFuncs) {
         funcs.push_back(typeFunc);
     }
@@ -82,8 +85,16 @@ void Engine::bindCallBackFuncs() {
     }
 }
 
+void Engine::loadScene() {
+    scene.addShader("Shaders/vert.spv", ShaderType::eVertex);
+    scene.addShader("Shaders/frag.spv", ShaderType::eFrag);
+    scene.addModel("Resources/Models/viking_room.obj", "Resources/Textures/viking_room.png");
+    scene.read();
+}
+
 void Engine::tick() {
     winForm.tick();
+    scene.tickCPU();
     graphic.tick();
     editor.tickCPU();
 }

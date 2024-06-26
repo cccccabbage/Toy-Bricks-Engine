@@ -49,7 +49,7 @@ public:
     void                      bindTickCmdFunc(std::function<void(const vk::CommandBuffer&)> func);
     ImGui_ImplVulkan_InitInfo getImguiInfo();
 
-    auto getBindFuncs() { return scene.getBindFuncs(); }
+    void initSceneInterface();
 
 private:
     void createInstance();
@@ -65,7 +65,6 @@ private:
     void createCommandPool();
     void createColorResources();
     void createDepthResources();
-    void loadModel();
     void createDescriptor();
     void createCommandBuffers();
     void createSyncObjects();
@@ -93,9 +92,6 @@ private:
 
 private:
     std::vector<std::function<void(const vk::CommandBuffer&)>> tickCmdFuncs{};
-
-private:
-    Scene::Scene scene{};
 
 private:
     bool       isDeviceSuitable(const vk::PhysicalDevice& phyDevice);
