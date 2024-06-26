@@ -28,20 +28,18 @@ public: // model related
     void addModel(std::string_view modelPath, std::string_view texturePath);
 
 public: // shader related
-    void addShader(std::string filePath, ShaderType type) { shader.addShader(filePath, type); }
-
-    void destroyShaderCache();
+    void addShader(std::string filePath, ShaderType type) {
+        shaderManager.addShader(filePath, type);
+    }
 
 public:
     auto getIdxSize(uint32_t idx) { return modelManager.getIdxSize(idx); }
 
-public:
-    Resource::ShaderManager shader{};
-
 private:
-    Camera              camera{};
-    Model::ModelManager modelManager{};
-    uint32_t            currentFrame = 0;
+    Camera                  camera{};
+    Resource::ShaderManager shaderManager{};
+    Model::ModelManager     modelManager{};
+    uint32_t                currentFrame = 0;
 
 private:
     void updateUniformBuffer();

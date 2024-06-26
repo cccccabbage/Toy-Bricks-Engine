@@ -10,7 +10,6 @@ namespace TBE::Resource {
 
 class ShaderManager {
 public:
-    ShaderManager();
     ~ShaderManager();
 
     void destroy();

@@ -40,8 +40,6 @@ VulkanGraphics::VulkanGraphics(Window::Window& window_) : window(window_) {
     logger->trace("Initializing graphic.");
     initVulkan();
 
-    // auto sceneTickFunc =
-    //     std::bind(&Scene::Scene::tickGPU, &scene, std::placeholders::_1, pipelineLayout);
     auto sceneTickFunc =
         std::bind(&SceneInterface::tickGPU, &sceneInterface, std::placeholders::_1, pipelineLayout);
     bindTickCmdFunc(sceneTickFunc);
@@ -66,18 +64,18 @@ void VulkanGraphics::initVulkan() {
     createSwapChain();
 
     createRenderPass();
-    createGraphicsPipeline();
 
     createColorResources();
     createDepthResources();
     createFramebuffers();
     createCommandPool();
 
-    loadModel();
-    createDescriptor();
-
     createCommandBuffers();
     createSyncObjects();
+
+    createGraphicsPipeline();
+    loadModel();
+    createDescriptor();
 }
 
 void VulkanGraphics::tick() {
@@ -318,7 +316,7 @@ void VulkanGraphics::createRenderPass() {
 void VulkanGraphics::createGraphicsPipeline() {
     scene.addShader("Shaders/vert.spv", ShaderType::eVertex);
     scene.addShader("Shaders/frag.spv", ShaderType::eFrag);
-    auto shaderStages = sceneInterface.initDescriptorSetLayout();
+    auto shaderStages = shaderInterface.initDescriptorSetLayout();
 
     std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport,
                                                    vk::DynamicState::eScissor};
@@ -393,7 +391,7 @@ void VulkanGraphics::createGraphicsPipeline() {
 
     // define the uniform data that would be passed to shader
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.setSetLayouts(sceneInterface.getDescriptorSetLayout());
+    pipelineLayoutInfo.setSetLayouts(shaderInterface.descriptors.layout);
 
     depackReturnValue(pipelineLayout, device.createPipelineLayout(pipelineLayoutInfo));
 
@@ -415,7 +413,7 @@ void VulkanGraphics::createGraphicsPipeline() {
     depackReturnValue(grapPipes, device.createGraphicsPipelines(nullptr, pipelineInfo));
     graphicsPipeline = std::move(grapPipes[0]);
 
-    scene.destroyShaderCache();
+    shaderInterface.destroyCache();
 }
 
 void VulkanGraphics::createFramebuffers() {
@@ -462,6 +460,7 @@ void VulkanGraphics::loadModel() {
     scene.read();
 }
 
+// TODO: move this function to somewhere else
 void VulkanGraphics::createDescriptor() {
     std::array<vk::DescriptorPoolSize, 2> poolSizes{};
     poolSizes[0]
@@ -471,10 +470,10 @@ void VulkanGraphics::createDescriptor() {
         .setType(vk::DescriptorType::eCombinedImageSampler)
         .setDescriptorCount(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT));
 
-    sceneInterface.initDescriptorPool(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT), poolSizes);
-    sceneInterface.initDescriptorSets(sceneInterface.getUniformBufferRs(),
-                                      sceneInterface.getTextureSampler(0),
-                                      sceneInterface.getTextureImageView(0));
+    shaderInterface.descriptors.initPool(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT), poolSizes);
+    shaderInterface.descriptors.initSets(sceneInterface.getUniformBufferRs(),
+                                         modelInterface.getTextureSampler(0),
+                                         modelInterface.getTextureImageView(0));
 }
 
 void VulkanGraphics::createCommandBuffers() {

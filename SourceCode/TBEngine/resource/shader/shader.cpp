@@ -6,9 +6,6 @@ namespace TBE::Resource {
 using namespace TBE::Utils::Log;
 using File::ShaderFile;
 
-ShaderManager::ShaderManager() {
-}
-
 ShaderManager::~ShaderManager() {
     destroy();
 }

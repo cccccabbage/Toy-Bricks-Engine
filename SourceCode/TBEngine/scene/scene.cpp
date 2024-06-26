@@ -8,7 +8,7 @@ using namespace TBE::Editor::DelegateManager;
 
 void Scene::destroy() {
     modelManager.destroy();
-    shader.destroy();
+    shaderManager.destroy();
 }
 
 std::vector<std::tuple<InputType, std::any>> Scene::getBindFuncs() {
@@ -57,10 +57,6 @@ void Scene::read() {
 
 void Scene::addModel(std::string_view modelPath, std::string_view texturePath) {
     auto idx = modelManager.add(modelPath, texturePath, true);
-}
-
-void Scene::destroyShaderCache() {
-    Graphics::VulkanGraphics::shaderInterface.destroyCache();
 }
 
 } // namespace TBE::Scene
